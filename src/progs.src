@@ -1,0 +1,56 @@
+../progs.dat
+
+defs.qc
+subs.qc
+maps.qc
+fight.qc
+ai.qc
+combat.qc
+itemnames.qc
+items.qc
+weapons.qc
+
+weapons/ammo/am_recoil.qc
+weapons/ammo/am_operations.qc
+
+weapons/ammo/am_buckshot.qc
+weapons/ammo/am_ballistics.qc
+weapons/ammo/am_laser.qc
+
+weapons/holdout/w_rahpm1.qc
+weapons/holdout/w_mk23_anim.qc
+weapons/holdout/w_mk23.qc
+
+weapons/secondary/w_ump45.qc
+
+weapons/primary/w_dbshot.qc
+
+weapons/utility/w_grapple.qc
+world.qc
+client.qc
+player.qc
+monsters.qc
+doors.qc
+buttons.qc
+triggers.qc
+plats.qc
+misc.qc
+
+monsters/ogre.qc
+monsters/fiend.qc
+monsters/shambler.qc
+monsters/knight.qc
+monsters/grunt.qc
+monsters/scrag.qc
+monsters/rottweiler.qc
+monsters/zombie.qc
+monsters/chthon.qc
+
+monsters/spawn.qc		// registered
+monsters/hellknight.qc	// registered
+monsters/rotfish.qc		// registered
+monsters/vore.qc		// registered
+monsters/enforcer.qc	// registered
+monsters/shub.qc		// registered
+
+bots/bot.qc				// bot support

@@ -1,0 +1,78 @@
+IT_AXE					to > IT_SLOT_MELEE
+IT_SHOTGUN				to > IT_SLOT_HOLDOUT
+IT_SUPER_SHOTGUN		to > IT_SLOT_SECONDARY
+IT_NAILGUN				to > IT_SLOT_PRIMARY
+IT_SUPER_NAILGUN		to > IT_SLOT_HEAVY
+IT_GRENADE_LAUNCHER		to > IT_SLOT_UTILITY
+IT_ROCKET_LAUNCHER		to > IT_SLOT_AUX1
+IT_LIGHTNING			to > IT_SLOT_AUX2
+IT_EXTRA_WEAPON			to > IT_SLOT_AUX3
+
+
+add weapon_mode_melee;
+weapon_mode_shotgun 			to > weapon_mode_holdout;
+weapon_mode_supershotgun 		to > weapon_mode_secondary;
+weapon_mode_nailgun 			to > weapon_mode_primary;
+weapon_mode_supernailgun 		to > weapon_mode_heavy;
+weapon_mode_grenadelauncher 	to > weapon_mode_utility;
+weapon_mode_rocketlauncher 		to > weapon_mode_aux1;
+weapon_mode_lightning 			to > weapon_mode_aux2;
+
+add weapon_mode_aux3;
+
+Issues:
+Projectiles for weapons have a strange wrapping origin point when aiming, that need to be locked down. *IN PROGRESS
+
+Recoil system is improving, but is jarringly jittery. Maybe change it where the camera punchangle is just a more minor visual affect, not tied to the point of aim. Perhaps some kind of visual crosshair to make the recoil effects clear.
+
+
+Building a meaty Gatling Gun for the heavy slot would be cool. It should need both cells and nails to fire, the currentammo showing whichever of the two is a lower value.
+
+Need to up the total limits on cells to 200, (at least.)
+
+Need to build a reload system.
+
+Need to start playing with animations to get more control over the weapon.mdls I use.
+
+Once the recoil and projectiles get worked out, I should build an assault rifle of some sort.
+
+A revolver that uses shotshells would make an interesting holdout weapon.
+
+Need to establish the LOADOUT system, that determines which weapons go into which slots.
+
+Idea for a special item or ability, Heartbeat Headphones that have blinking icons on enemies that are nearby but behind walls.
+
+Need grenade types. Fragmentation, Gas for area denial/damage over time, flashbangs or concussive grenades to stun enemies.
+
+Quick Grenades need some kind of cooldown, or windup time. Spootin' them out is fun, but it's a bit OP, and kills any potential for future grenade launcher weapons.
+
+Melee systems need to be built out more. Some kind of Secret of Mana kind of mechanic that allows for max damage on first hit, but diminished damage for rapid hits. The variability on that can be toyed with for different melee weapon types.
+
+Damage type system that can be tied to monsters. EG, the Armor Piercing damage is resisted by thicc boys, and more effective against plate armor. Hollow Points and the like would have inverse affects. This could extend to the grenade types too, fragmentation doing better against flesh, and a heat base explosive would likely be more effective against armored targets.
+
+Figuring out some stealth mechanics could make for some interesting gameplay. Being able to 'Vanish' from enemies, damage boosts to hitting enemies while they are idle, etc.
+This would likely get into having to build more advanced enemy ai, which sounds potentially daunting, but also very fun.
+
+Making some kind of medical system could open up some potential gameplay ideas. This might be too abstract an idea, but allowing for some health recovery based on treating injuries (like setting bones,) or some kind of pop up minigame for bandaging up. It would have to require some resource (maybe an ammo counter based on health pickups) and successes in the minigame before restoring health. It would be a bit time-consuming so it would be difficult to do in combat. 
+
+PETS! Being able to spawn a pet rotty to run with you would be fun. It'll need some kind of system that's more engaging than just dropping it down into the world. 
+Perhaps some kind of psuedo Pokeball system (we'll use a gun to just point and shoot where to spawn it, so we don't get sued by Nintendo,) the uses cells to spawn the pet. The weapon switch and select between a rott, fiend, and baby shambler, costing an appropriate amount of cells.
+Adding a check to see if the pet is alive at the end of the level can return that ammo cost of cells.
+Alternatively, having a dedicated pet as a slot choice might be more interesting. It could have play with the medical system, or require feeding the pet monster meat you get from pakpaks. 
+Either way, it'll need to not get too convoluted and be able to keep up with fast-paced Quakeplay.
+
+The LOADOUT system could include some mechanic that slows you down more depending on the weapons you carry. That would make for some interesting incentive to not just carry the biggest weapons. Leaving slots empty to add bonuses to maximum ammo counts.
+
+For co-op play, there should be a way to drop ammo for others. This could be built into game-wise by potentially making ammo supply drops.
+
+Some armor options would be cool. The ground armor items should become some kind of resistence boosters that get wore down as players take damage.
+An energy shield would be interesting alternative. It would not be as strong as hard armor types, but it would cap incoming damage at its breaking point, which would give a moment or two of 'i-frames' that require not taking damage for it to replinish. Although, no damage would effectively actually hurt health when it is up.
+A hard armor type would be more traditional to Quake. Armor pickups would build it up, taking damage won't prevent health from going down completely, like the energy shield, but will resist damage based on the level the armor is at. The bonus on this armor is it always has a minimum damage reduction, even when armor is zero. It will always be a minimum level equal to green armor. Once armor is built up enough that it is 100 or greater, it has yellow armor, and 150 or greater is red armor.
+A health based armor might be interesting, call it Constitution Armor, or something easier to say. Instead of armor, you just have uncapped health. It won't automatically count down, and all health and armor pickups increase it. Medicine would only work up to the 100 cap. Technically speaking, there likely will be at most a cap of 999, but- OR a cap of 666. Once it is hit, you get an automatic Pentagram of Protection, and your health is reduced to 500. This might need to be tuned or capped at one activation per level or something.
+
+Need to remake the 410 shotgun. Needs beefy feedback, perhaps blasting off a random gib chunk when it hits a target.
+
+A dodge movement button needs to be done. This will likely need to wait until more code is cleaned up.
+
+Detpacks, a slow process where you plant an explosive in a similar way as planting a bomb in Counter-Strike. It uses a variable amount of rockets and cells, then can be tied to a clacker or a maybe a proximity trigger. Triggers damage doors to open instantly when detpacked, for flavor.
+
