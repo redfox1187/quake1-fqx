@@ -1,0 +1,65 @@
+# Lines starting with # are comments
+
+# Ignore compiled QuakeC game logic
+progs.dat
+
+# Ignore packaged files (if they are BUILT from source assets in the repo)
+# If your .pak/.pk3 contain source assets you want versioned, DO NOT ignore them here!
+*.pak
+*.pk3
+
+# Ignore compiled engine/tools if you build them yourself
+*.exe
+*.dll
+*.so
+*.dylib
+*.o
+*.obj
+*.a
+*.lib
+
+# Ignore build output directories
+build/
+bin/
+Release/
+Debug/
+output/
+
+src - clean/
+
+# Ignore log files
+*.log
+qconsole.log
+error.log
+
+# Ignore editor backup files
+*~
+*.bak
+*.swp
+*.tmp
+
+# Ignore map editor specific backups (adjust pattern if needed)
+*.map.bak
+*.map.~*
+
+# Ignore IDE/Editor specific config folders/files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
+
+*.lnk
+*.7z
+*.txt
+
+# Ignore personal configuration files (unless it's a template you want to share)
+# config.cfg
+# autoexec.cfg
+
+# Add any other files or folders specific to your tools or workflow
+my_build_script_output/
+temp_files/
