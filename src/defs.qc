@@ -339,6 +339,24 @@ float UMP_FIREMODE_IDX_DEBUG = 3;     // UMP's debug mode uses index 3
 // RAHP Specific Fire Mode Index Constants (if needed globally, e.g. by W_HasNoAmmo in weapons.qc)
 float RAHP_FIREMODE_IDX_SMALL_LASER = 0; 
 
+// --- BEGIN FIRE MODE PERSISTENCE CONSTANTS (BITFLAG EMULATION) ---
+// Mask to extract a single fire mode value (0-3)
+float FIREMODE_PERSIST_MASK = 3; // (binary 11)
+
+// Place values (2^shift_amount) for each weapon slot's fire mode
+// Slot order: MELEE, HOLDOUT, SECONDARY, PRIMARY, HEAVY, UTILITY, AUX1, AUX2, AUX3
+// These correspond to 2^(slot_index * 2_bits_per_slot)
+float FIREMODE_PLACE_VALUE_SLOT_MELEE     = 1;    // 2^0
+float FIREMODE_PLACE_VALUE_SLOT_HOLDOUT   = 4;    // 2^2
+float FIREMODE_PLACE_VALUE_SLOT_SECONDARY = 16;   // 2^4
+float FIREMODE_PLACE_VALUE_SLOT_PRIMARY   = 64;   // 2^6
+float FIREMODE_PLACE_VALUE_SLOT_HEAVY     = 256;  // 2^8
+float FIREMODE_PLACE_VALUE_SLOT_UTILITY   = 1024; // 2^10
+float FIREMODE_PLACE_VALUE_SLOT_AUX1      = 4096; // 2^12
+float FIREMODE_PLACE_VALUE_SLOT_AUX2      = 16384;// 2^14
+float FIREMODE_PLACE_VALUE_SLOT_AUX3      = 65536;// 2^16
+// --- END FIRE MODE PERSISTENCE CONSTANTS ---
+
 
 //
 // constants

@@ -54,82 +54,143 @@ void() SetChangeParms =
 {
     if(reset_flag)
     {
-        setspawnparms(self);
+        setspawnparms(self); // This function likely reloads parms if player is restarting a level.
+                             // Our parm15 should be fine as it would be reloaded from its previous state.
         return;
-	}
+    }
 
-	if (self.health <= 0 || deathmatch)
-	{
-		SetNewParms ();
-		return;
-	}
+    if (self.health <= 0 || deathmatch)
+    {
+        SetNewParms (); // If dead or in deathmatch, player gets fresh parms for next level.
+                        // SetNewParms will set parm15 = 0, which is correct.
+        return;
+    }
  
-// remove items
-	self.items = self.items - (self.items & (IT_KEY1 | IT_KEY2 | IT_INVISIBILITY | IT_INVULNERABILITY | IT_SUIT | IT_QUAD) );
-	
-// cap super health
-	if (self.health > self.max_health)
-		self.health = self.max_health;
+    // remove items
+    self.items = self.items - (self.items & (IT_KEY1 | IT_KEY2 | IT_INVISIBILITY | IT_INVULNERABILITY | IT_SUIT | IT_QUAD) );
+    // cap super health
+    if (self.health > self.max_health)
+        self.health = self.max_health;
 
-	if (self.health < self.max_health / 2)
-		self.health = self.max_health / 2;
+    if (self.health < self.max_health / 2) // Ensure player has at least half health
+        self.health = self.max_health / 2;
+        
+    parm1 = self.items;
+    parm2 = self.health;
+    parm3 = self.armorvalue;
 
-	parm1 = self.items;
-	parm2 = self.health;
-	parm3 = self.armorvalue;
+  if (self.ammo_shells < 25) // If carrying shells, ensure at least 25
+        parm4 = 25;
+    else
+        parm4 = self.ammo_shells;
+        
+    parm5 = self.ammo_nails;
+    parm6 = self.ammo_rockets;
+    parm7 = self.ammo_cells;
+    parm8 = self.weapon;
+    parm9 = self.armortype * 100; // Armor type (0-3 maps to 0-0.8 roughly)
 
-	if (self.ammo_shells < 25)
-		parm4 = 25;
-	else
-		parm4 = self.ammo_shells;
+   // --- BEGIN PACKING FIRE MODES (Arithmetic Emulation) ---
+    float packed_fire_modes = 0;
 
-	parm5 = self.ammo_nails;
-	parm6 = self.ammo_rockets;
-	parm7 = self.ammo_cells;
-	parm8 = self.weapon;
-	parm9 = self.armortype * 100;
+    // Ensure fire mode values are within 0-3 before packing
+    packed_fire_modes = packed_fire_modes + (self.firemode_slot_melee     & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_MELEE;
+    packed_fire_modes = packed_fire_modes + (self.firemode_slot_holdout   & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_HOLDOUT;
+    packed_fire_modes = packed_fire_modes + (self.firemode_slot_secondary & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_SECONDARY;
+    packed_fire_modes = packed_fire_modes + (self.firemode_slot_primary   & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_PRIMARY;
+    packed_fire_modes = packed_fire_modes + (self.firemode_slot_heavy     & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_HEAVY;
+    packed_fire_modes = packed_fire_modes + (self.firemode_slot_utility   & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_UTILITY;
+    packed_fire_modes = packed_fire_modes + (self.firemode_slot_aux1      & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_AUX1;
+    packed_fire_modes = packed_fire_modes + (self.firemode_slot_aux2      & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_AUX2;
+    packed_fire_modes = packed_fire_modes + (self.firemode_slot_aux3      & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_AUX3;
+    
+    parm15 = packed_fire_modes; // Store packed fire modes
+    // --- END PACKING FIRE MODES ---
 };
 
 void() SetNewParms =
 {
-	parm1 = IT_SLOT_HOLDOUT | IT_SLOT_MELEE;
-	if (skill == 3 && !deathmatch)
-		parm2 = 50;
-	else
-		parm2 = 100;
-    parm3 = 0;                     // armor
-    parm4 = 25;                    // shells
-    parm5 = 0;                     // nails
-    parm6 = 0;                     // rockets
-    parm7 = 0;                     // cells
-    parm8 = 1;                     // active weapon
-    parm9 = 0;                     // total secrets
-    parm10 = 0;                    // total monsters
-    parm11 = 0;                    // kills
-    parm12 = 0;                    // items
-    parm13 = 1;                    // weapon frame
-    parm14 = 0;                    // armor type
-    parm15 = 0;                    // weapon mode flags (you could add this!)
-    parm16 = 0;                    // unused in standard Quake
+    // Give player default holdout (e.g. RAHP M1) and melee weapon
+    parm1 = IT_SLOT_HOLDOUT | IT_SLOT_MELEE; 
+    
+    if (skill == 3 && !deathmatch) // Nightmare difficulty starting health
+        parm2 = 50;
+    else
+        parm2 = 100; // Normal starting health
+        
+    parm3 = 0;                      // armor value
+    parm4 = 25;                     // shells (for shotgun if IT_SLOT_HOLDOUT isn't shotgun)
+                                    // This will be given if player picks up a shell weapon.
+                                    // Or, if IT_SLOT_HOLDOUT *is* a shotgun, this is its starting ammo.
+    parm5 = 0;                      // nails
+    parm6 = 0;                      // rockets
+    parm7 = 0;                      // cells
+    parm8 = IT_SLOT_HOLDOUT;        // active weapon is the holdout slot
+    parm9 = 0;                      // armor type (0% protection) - this is consistent with DecodeLevelParms: self.armortype = parm9 * 0.01
+    
+    // These seem to be related to map statistics tracking, not player inventory carry-over.
+    parm10 = 0;                     // total secrets (for the map, usually set by worldspawn)
+    parm11 = 0;                     // total monsters (for the map)
+    parm12 = 0;                     // kills (player's kills on the map)
+    parm13 = 1;                     // weapon frame (likely overridden by W_SetCurrentAmmo)
+    parm14 = 0;                     // armor type (seems redundant with parm9, but your file has it. Keep as is.)
+
+    // --- INITIALIZE PACKED FIRE MODES ---
+    parm15 = 0;                     // Weapon mode flags: 0 means all slots default to FIRE_MODE_PRIMARY (0)
+    // --- END INITIALIZE ---
+    
+    parm16 = 0;                     // unused in standard Quake
 };
 
 void() DecodeLevelParms =
 {
-	if (serverflags)
-	{
-		if (world.model == "maps/start.bsp")
-			SetNewParms ();		// take away all stuff on starting new episode
-	}
-	
-	self.items = parm1;
-	self.health = parm2;
-	self.armorvalue = parm3;
-	self.ammo_shells = parm4;
-	self.ammo_nails = parm5;
-	self.ammo_rockets = parm6;
-	self.ammo_cells = parm7;
-	self.weapon = parm8;
-	self.armortype = parm9 * 0.01;
+    if (serverflags) // This seems to be for multi-episode progression
+    {
+        if (world.model == "maps/start.bsp") // If starting map of an episode
+            SetNewParms (); // Player gets fresh parms
+                           // This is important: SetNewParms now also sets parm15 = 0.
+    }
+    
+    self.items = parm1;
+    self.health = parm2;
+    self.armorvalue = parm3;
+    self.ammo_shells = parm4;
+    self.ammo_nails = parm5;
+    self.ammo_rockets = parm6;
+    self.ammo_cells = parm7;
+    self.weapon = parm8;
+    self.armortype = parm9 * 0.01;
+
+    // --- BEGIN UNPACKING FIRE MODES (Arithmetic Emulation - Robust) ---
+    float temp_packed_modes = parm15; // Use a temporary variable
+
+    self.firemode_slot_aux3 = floor(temp_packed_modes / FIREMODE_PLACE_VALUE_SLOT_AUX3) & FIREMODE_PERSIST_MASK;
+    temp_packed_modes = temp_packed_modes - (self.firemode_slot_aux3 * FIREMODE_PLACE_VALUE_SLOT_AUX3);
+
+    self.firemode_slot_aux2 = floor(temp_packed_modes / FIREMODE_PLACE_VALUE_SLOT_AUX2) & FIREMODE_PERSIST_MASK;
+    temp_packed_modes = temp_packed_modes - (self.firemode_slot_aux2 * FIREMODE_PLACE_VALUE_SLOT_AUX2);
+
+    self.firemode_slot_aux1 = floor(temp_packed_modes / FIREMODE_PLACE_VALUE_SLOT_AUX1) & FIREMODE_PERSIST_MASK;
+    temp_packed_modes = temp_packed_modes - (self.firemode_slot_aux1 * FIREMODE_PLACE_VALUE_SLOT_AUX1);
+
+    self.firemode_slot_utility = floor(temp_packed_modes / FIREMODE_PLACE_VALUE_SLOT_UTILITY) & FIREMODE_PERSIST_MASK;
+    temp_packed_modes = temp_packed_modes - (self.firemode_slot_utility * FIREMODE_PLACE_VALUE_SLOT_UTILITY);
+
+    self.firemode_slot_heavy = floor(temp_packed_modes / FIREMODE_PLACE_VALUE_SLOT_HEAVY) & FIREMODE_PERSIST_MASK;
+    temp_packed_modes = temp_packed_modes - (self.firemode_slot_heavy * FIREMODE_PLACE_VALUE_SLOT_HEAVY);
+
+    self.firemode_slot_primary = floor(temp_packed_modes / FIREMODE_PLACE_VALUE_SLOT_PRIMARY) & FIREMODE_PERSIST_MASK;
+    temp_packed_modes = temp_packed_modes - (self.firemode_slot_primary * FIREMODE_PLACE_VALUE_SLOT_PRIMARY);
+
+    self.firemode_slot_secondary = floor(temp_packed_modes / FIREMODE_PLACE_VALUE_SLOT_SECONDARY) & FIREMODE_PERSIST_MASK;
+    temp_packed_modes = temp_packed_modes - (self.firemode_slot_secondary * FIREMODE_PLACE_VALUE_SLOT_SECONDARY);
+
+    self.firemode_slot_holdout = floor(temp_packed_modes / FIREMODE_PLACE_VALUE_SLOT_HOLDOUT) & FIREMODE_PERSIST_MASK;
+    temp_packed_modes = temp_packed_modes - (self.firemode_slot_holdout * FIREMODE_PLACE_VALUE_SLOT_HOLDOUT);
+
+    self.firemode_slot_melee = floor(temp_packed_modes / FIREMODE_PLACE_VALUE_SLOT_MELEE) & FIREMODE_PERSIST_MASK;
+    // No need to subtract for the last one if it's place value 1.
+    // --- END UNPACKING FIRE MODES ---
 };
 
 /*
