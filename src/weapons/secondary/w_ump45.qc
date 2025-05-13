@@ -161,34 +161,63 @@ void() W_FireUMP45_Single =
 {
     local float accuracy;
 
-    // Check if the generic semi-auto conditions are met (button released since last shot).
     if (!AM_CanFireSemiAuto()) 
     {
-        return; // Don't fire if button is still held from previous shot.
+        // Player is holding the fire button, but a semi-auto shot is not allowed yet.
+        // Try to explicitly clear any player-side muzzle flash.
+        // EF_MUZZLEFLASH is the standard Quake C effect for this.
+        if (self.effects & EF_MUZZLEFLASH)
+        {
+            self.effects = self.effects - EF_MUZZLEFLASH;
+        }
+
+        // Also, to prevent the weapon's attack animation from restarting immediately
+        // (which might re-apply a muzzle flash or keep it in a "firing" pose),
+        // set a very short attack_finished delay. This gives one frame for
+        // W_WeaponFrame (or equivalent) to process an idle state.
+        if (time >= self.attack_finished) // Only apply if not already in a longer cooldown
+        {
+            self.attack_finished = time + 0.05; // A very small delay
+        }
+        
+        // Resetting weaponframe can also help ensure it goes to an idle animation.
+        if (self.weaponframe != 0)
+        {
+            self.weaponframe = 0;
+        }
+        return; // Don't fire
     }
     
-    // Check for ammo.
-    if (self.ammo_nails <= 0) // Replace self.ammo_nails.
+    // Check for ammo (this part remains the same)
+    if (self.ammo_nails <= 0)
     {
         sound(self, CHAN_WEAPON, "weapons/boltback.wav", 1, ATTN_NORM); 
-        self.attack_finished = time + 0.2; 
-        self.weapon_fire_released = TRUE; // Allow next fire attempt even if out of ammo.
+        self.attack_finished = time + 0.2;
+        self.weapon_fire_released = TRUE; 
+        if (self.effects & EF_MUZZLEFLASH) { self.effects = self.effects - EF_MUZZLEFLASH; } // Clear flash on dry fire too
+        if (self.weaponframe != 0) { self.weaponframe = 0; }
         return;
     }
     
-    AM_ConsumeAmmo(AMMO_ID_NAILS, 1); // Replace AMMO_ID_NAILS.
-    accuracy = UMP_ACCURACY_SINGLE; 
+    // Actual firing logic (this part remains the same)
+    AM_ConsumeAmmo(AMMO_ID_NAILS, 1);
+    accuracy = UMP_ACCURACY_SINGLE;
+    if (vlen(self.velocity) > 20)
+        accuracy = accuracy * 0.7;
     
-    if (vlen(self.velocity) > 20) // Reduce accuracy if player is moving.
-        accuracy = accuracy * 0.7; 
+    // IMPORTANT: How is the UMP45's player-side muzzle flash normally triggered?
+    // Is it by W_am_fire_bullets? Or is it part of the view model animation sequence
+    // handled in W_WeaponFrame (weapons.qc) which sets self.effects based on self.weaponframe?
+    // For now, we assume W_am_fire_bullets OR the animation sequence handles *setting* it briefly.
+    // Our fix above focuses on *clearing* it if it lingers.
     
-    W_am_fire_bullets(1, CAL_45ACP, BLT_FMJ, accuracy, 5); // Fire one bullet.
-    sound(self, CHAN_WEAPON, "weapons/ump45-1.wav", 1, ATTN_NORM); 
+    W_am_fire_bullets(1, CAL_45ACP, BLT_FMJ, accuracy, 5); 
+    sound(self, CHAN_WEAPON, "weapons/ump45-1.wav", 1, ATTN_NORM);
     AM_ApplyRecoil(UMP_RECOIL_BASE * 0.8, 0.3, UMP_RECOIL_VERTICAL_BIAS, 0.2, 1.5); 
     
-    self.attack_finished = time + UMP_FIRERATE; // Set weapon cooldown.
-    self.ump_last_fire_time = time;             // Record time of this shot.
-    self.weapon_fire_released = FALSE;          // Set generic flag to require button release for next shot.
+    self.attack_finished = time + UMP_FIRERATE;
+    self.ump_last_fire_time = time;
+    self.weapon_fire_released = FALSE; // CRITICAL: Set flag to require button release for next shot
 };
 
 /*
@@ -197,34 +226,65 @@ W_FireUMP45_Burst_Start
 Initiates a 3-round burst. Burst fire logic is specific to the UMP45.
 ================
 */
+
 void() W_FireUMP45_Burst_Start =
 {
     // Don't start a new burst if one is already in progress.
     if (self.ump_burst_active) 
         return; 
         
-    // Check for ammo.
-    if (self.ammo_nails <= 0) // Replace self.ammo_nails.
+    // Check if this burst action is allowed (like semi-auto)
+    if (!AM_CanFireSemiAuto())
     {
-        sound(self, CHAN_WEAPON, "weapons/boltback.wav", 1, ATTN_NORM); 
+        // Player is holding the fire button, but a new burst is not allowed yet.
+        // Apply the same muzzle flash clearing logic as used in semi-auto.
+        if (self.effects & EF_MUZZLEFLASH)
+        {
+            self.effects = self.effects - EF_MUZZLEFLASH;
+        }
+
+        // Set a very short attack_finished delay to prevent immediate re-evaluation
+        // of attack animations, allowing the muzzle flash to visually clear.
+        if (time >= self.attack_finished) // Only apply if not already in a longer cooldown
+        {
+            self.attack_finished = time + 0.05; // A very small delay
+        }
+        
+        // Resetting weaponframe can also help ensure it goes to an idle animation.
+        if (self.weaponframe != 0)
+        {
+            self.weaponframe = 0;
+        }
+        return; // Trigger not released and re-pressed, or already handled.
+    }
+    
+    // Check for ammo.
+    if (self.ammo_nails <= 0)
+    {
+        sound(self, CHAN_WEAPON, "weapons/boltback.wav", 1, ATTN_NORM);
         self.attack_finished = time + 0.2; 
+        self.weapon_fire_released = TRUE; // Allow next fire attempt even if out of ammo.
+        if (self.effects & EF_MUZZLEFLASH) { self.effects = self.effects - EF_MUZZLEFLASH; } // Clear flash on dry fire
+        if (self.weaponframe != 0) { self.weaponframe = 0; } // Reset animation
         return;
     }
     
-    self.ump_burst_active = 1;      // Mark burst as active.
-    self.ump_burst_count = 0;       // Reset shots fired in this burst.
-    AM_ResetSustainedRecoil();      // Reset recoil at the start of a burst.
+    // ---- Rest of the function remains the same as your last working version for burst ----
+    self.ump_burst_active = 1;       // Mark burst as active.
+    self.ump_burst_count = 0;        // Reset shots fired in this burst.
+    AM_ResetSustainedRecoil();       // Reset recoil at the start of a burst.
     
-    W_FireUMP45_Burst_Shot();       // Fire the first shot immediately.
+    W_FireUMP45_Burst_Shot();        // Fire the first shot immediately.
     
     // Schedule the think function to fire subsequent shots in the burst.
     self.ump_next_burst_time = time + UMP_FIRERATE * 0.8; // Burst shots are slightly faster.
     self.think = W_FireUMP45_Burst_Think;                 
-    self.nextthink = self.ump_next_burst_time;            
+    self.nextthink = self.ump_next_burst_time;
     
     // Set overall weapon cooldown for the duration of the burst.
     self.attack_finished = time + (UMP_FIRERATE * 0.8 * 3) + 0.1; 
-    self.weapon_fire_released = FALSE; // Burst fire also consumes the "released" state for this trigger pull.
+
+    self.weapon_fire_released = FALSE; // Mark the trigger pull as consumed for this burst action
 };
 
 /*
@@ -274,7 +334,6 @@ void() W_FireUMP45_Burst_Think =
         AM_ResetSustainedRecoil(); 
         self.think = SUB_Null;    // Clear this think function.
         self.nextthink = -1;      // Stop thinking.
-        self.weapon_fire_released = TRUE; // Allow next fire action after burst completes or aborts.
         return;
     }
     
@@ -292,7 +351,6 @@ void() W_FireUMP45_Burst_Think =
         AM_ResetSustainedRecoil(); 
         self.think = SUB_Null;
         self.nextthink = -1;
-        self.weapon_fire_released = TRUE; // Allow next fire action.
     }
 };
 

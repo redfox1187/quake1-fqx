@@ -195,3 +195,5 @@ void AM_CycleFireMode()
     self.weapon_fire_released = TRUE; 
     AM_ResetSustainedRecoil();        
 }
+
+

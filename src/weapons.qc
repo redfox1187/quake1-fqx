@@ -750,6 +750,7 @@ void() ImpulseCommands =
 	self.impulse = 0;
 };
 
+
 /*
 ============
 W_WeaponFrame
@@ -759,32 +760,61 @@ void() W_WeaponFrame =
 {
     if (time < self.attack_finished) 
     {
-        AM_WeaponFrame_HandleFireRelease(); 
-        return; 
+        // Weapon is in cooldown.
+        if (self.button0) 
+        {
+            // Player is pressing/holding the fire button DURING cooldown.
+            // This action "spoils" any previous release. The player must release
+            // and press again *after* the cooldown to fire a new semi/burst action.
+            self.weapon_fire_released = FALSE;
+        }
+        else
+        {
+            // Player is NOT pressing fire button during cooldown.
+            // This means they released it. Allow weapon_fire_released to become TRUE.
+            AM_WeaponFrame_HandleFireRelease(); 
+        }
+        return; // Done for this frame, weapon is busy.
     }
+
+    // If we reach here, cooldown is OVER (time >= self.attack_finished).
 
     if (self.impulse)
     {
         ImpulseCommands();
+        // If an impulse changed the weapon, W_SetCurrentAmmo would have been called,
+        // which resets relevant states including attack_finished, potentially.
+        // If attack_finished was reset to 'time' by W_SetCurrentAmmo,
+        // the next W_WeaponFrame iteration will handle it correctly.
     }
     
-    if (self.button0) 
+    if (self.button0) // Player is pressing fire, and cooldown is over.
     {
+        // AM_ProcessAttackInputState(); // This logic is now integrated above.
+        
         SuperDamageSound(); 
-        W_Attack();         
+        W_Attack(); // W_Attack will call the weapon's fire function.
+                    // That function uses AM_CanFireSemiAuto(self.weapon_fire_released).
+                    // If weapon_fire_released is FALSE here, it's because the player
+                    // held the button through the cooldown (handled above), or never released
+                    // after a previous shot.
+                    // If weapon_fire_released is TRUE, it's because the player
+                    // freshly pressed the button *after* the cooldown was over.
     }
-    else 
+    else // Player is NOT pressing fire, and cooldown is over.
     {
-        AM_WeaponFrame_HandleFireRelease(); 
+        AM_WeaponFrame_HandleFireRelease(); // This will correctly set weapon_fire_released = TRUE.
 
+        // Specific logic to stop UMP burst if fire button is released mid-burst.
+        // This should still be here.
         if (self.weapon == IT_SLOT_PRIMARY && 
             self.current_weapon_fire_mode == UMP_FIREMODE_IDX_BURST && 
             self.ump_burst_active) 
         {
             self.ump_burst_active = 0; 
-            self.think = SUB_Null;     
+            self.think = SUB_Null;     // Stop the W_FireUMP45_Burst_Think
             self.nextthink = -1;
-            AM_ResetSustainedRecoil(); 
+            AM_ResetSustainedRecoil(); // Reset recoil as burst is interrupted
         }
     }
 };
