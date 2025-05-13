@@ -4,23 +4,13 @@
 //============================================================================
 
 // --- Ammo ID Constants ---
-// These constants are used to identify ammo types in shared functions.
-const float AMMO_ID_SHELLS = 1;
-const float AMMO_ID_NAILS = 2;
-const float AMMO_ID_ROCKETS = 3;
-const float AMMO_ID_CELLS = 4;
-// Add any custom ammo type IDs here if needed in the future
-// const float AMMO_ID_GRENADES = 5; // Example for a custom grenade launcher ammo
+float AMMO_ID_SHELLS = 1;
+float AMMO_ID_NAILS = 2;
+float AMMO_ID_ROCKETS = 3;
+float AMMO_ID_CELLS = 4;
 
 //============================================================================
 // AM_InitializeWeaponView
-// Sets up the player's view model, current ammo count based on the
-// active weapon's ammo type, and associated item flags.
-//
-// Parameters:
-// model_path         - The path to the weapon's view model (e.g., "progs/v_shot.mdl")
-// ammo_id_to_read    - The AMMO_ID_ constant for the weapon's ammo type
-// items_flag         - The IT_ flag associated with the ammo type (e.g., IT_SHELLS)
 //============================================================================
 void AM_InitializeWeaponView(string model_path, float ammo_id_to_read, float items_flag) {
     self.weaponmodel = model_path;
@@ -34,21 +24,10 @@ void AM_InitializeWeaponView(string model_path, float ammo_id_to_read, float ite
     } else if (ammo_id_to_read == AMMO_ID_CELLS) {
         self.currentammo = self.ammo_cells;
     }
-    // --- BEGIN EXAMPLE for custom ammo ---
-    // else if (ammo_id_to_read == AMMO_ID_GRENADES) { // If you added custom grenade ammo
-    //     self.currentammo = self.ammo_grenades_custom; // Assuming self.ammo_grenades_custom field
-    // }
-    // --- END EXAMPLE ---
     else {
-        // Default or error case: if an unknown ammo_id is passed,
-        // you might want to set currentammo to 0 or a default.
-        // For simplicity, we'll just log an error if developer console is available.
-        // dprint("AM_InitializeWeaponView: Unknown ammo_id_to_read\n");
-        self.currentammo = 0; // Or handle as appropriate
+        self.currentammo = 0;
     }
 
-    // Update player's item flags to show they possess this type of ammo/weapon capability
-    // Ensure items_flag is not 0 to avoid unintentionally modifying flags if no flag is relevant.
     if (items_flag != 0) {
         self.items = self.items | items_flag;
     }
@@ -56,11 +35,6 @@ void AM_InitializeWeaponView(string model_path, float ammo_id_to_read, float ite
 
 //============================================================================
 // AM_ConsumeAmmo
-// Decrements the specified ammo type for the player and updates self.currentammo.
-//
-// Parameters:
-// ammo_id            - The AMMO_ID_ constant for the ammo type to consume
-// amount_to_consume  - The number of ammo units to subtract
 //============================================================================
 void AM_ConsumeAmmo(float ammo_id, float amount_to_consume) {
     if (ammo_id == AMMO_ID_SHELLS) {
@@ -76,74 +50,148 @@ void AM_ConsumeAmmo(float ammo_id, float amount_to_consume) {
         self.ammo_cells = self.ammo_cells - amount_to_consume;
         self.currentammo = self.ammo_cells;
     }
-    // --- BEGIN EXAMPLE for custom ammo ---
-    // else if (ammo_id == AMMO_ID_GRENADES) { // If you added custom grenade ammo
-    //     self.ammo_grenades_custom = self.ammo_grenades_custom - amount_to_consume;
-    //     self.currentammo = self.ammo_grenades_custom;
-    // }
-    // --- END EXAMPLE ---
-    else {
-        // Error case or unknown ammo type
-        // dprint("AM_ConsumeAmmo: Unknown ammo_id\n");
-        // Potentially, do nothing or set currentammo to a known state
-    }
 
-    // It's good practice to ensure ammo doesn't go negative,
-    // though firing logic should ideally prevent this.
-    // This is a safeguard.
     if (self.ammo_shells < 0) { self.ammo_shells = 0; }
     if (self.ammo_nails < 0) { self.ammo_nails = 0; }
     if (self.ammo_rockets < 0) { self.ammo_rockets = 0; }
     if (self.ammo_cells < 0) { self.ammo_cells = 0; }
-    // if (self.ammo_grenades_custom < 0) { self.ammo_grenades_custom = 0; } // Example
 
-    // Re-assert currentammo after potential clamping, based on the consumed type
-    // This is a bit redundant if clamping never occurs before currentammo is set,
-    // but adds robustness.
     if (ammo_id == AMMO_ID_SHELLS) { self.currentammo = self.ammo_shells; }
     else if (ammo_id == AMMO_ID_NAILS) { self.currentammo = self.ammo_nails; }
     else if (ammo_id == AMMO_ID_ROCKETS) { self.currentammo = self.ammo_rockets; }
     else if (ammo_id == AMMO_ID_CELLS) { self.currentammo = self.ammo_cells; }
-    // else if (ammo_id == AMMO_ID_GRENADES) { self.currentammo = self.ammo_grenades_custom; } // Example
 }
 
-// You would then include this am_operations.qc file in your progs.src
-// and call these functions from your weapon code.
+//============================================================================
+// AM_InitWeaponFireModes
+// Initializes fire mode settings, loading the persisted mode for the current slot.
+//============================================================================
+void AM_InitWeaponFireModes(float num_standard_modes, float supports_debug_mode)
+{
+    self.weapon_num_standard_modes = num_standard_modes;
+    self.weapon_supports_debug_mode = supports_debug_mode;
 
-/*
-Example Usage in a weapon's _SetCurrentAmmo function (e.g., w_shotgun.qc):
+    float slot_weapon_id = self.weapon; // self.weapon holds the IT_SLOT_ flag
+    float mode_to_load = FIRE_MODE_PRIMARY; // Default to primary
 
-void() w_shotgun_SetCurrentAmmo = {
-    // ... other setup ...
-    AM_InitializeWeaponView("progs/v_shot.mdl", AMMO_ID_SHELLS, IT_SHELLS);
-    // ... weapon-specific recoil setup, etc. ...
-};
+    // Load the stored fire mode for the current weapon's slot
+    if (slot_weapon_id == IT_SLOT_MELEE) { mode_to_load = self.firemode_slot_melee; }
+    else if (slot_weapon_id == IT_SLOT_HOLDOUT) { mode_to_load = self.firemode_slot_holdout; }
+    else if (slot_weapon_id == IT_SLOT_SECONDARY) { mode_to_load = self.firemode_slot_secondary; }
+    else if (slot_weapon_id == IT_SLOT_PRIMARY) { mode_to_load = self.firemode_slot_primary; }
+    else if (slot_weapon_id == IT_SLOT_HEAVY) { mode_to_load = self.firemode_slot_heavy; }
+    else if (slot_weapon_id == IT_SLOT_UTILITY) { mode_to_load = self.firemode_slot_utility; }
+    else if (slot_weapon_id == IT_SLOT_AUX1) { mode_to_load = self.firemode_slot_aux1; }
+    else if (slot_weapon_id == IT_SLOT_AUX2) { mode_to_load = self.firemode_slot_aux2; }
+    else if (slot_weapon_id == IT_SLOT_AUX3) { mode_to_load = self.firemode_slot_aux3; }
 
-Example Usage in a weapon's fire function (e.g., W_FireShotgun):
+    // Validate the loaded mode against the actual capabilities of the *current physical weapon*
+    // in this slot. This handles cases where a slot might have stored a mode index
+    // that is too high for the weapon currently populating that slot.
+    float max_allowed_mode_idx = self.weapon_num_standard_modes - 1; // Max index for standard modes
+    if (self.weapon_supports_debug_mode == TRUE && cvar("developer") > 0)
+    {
+        max_allowed_mode_idx = self.weapon_num_standard_modes; // Debug mode is at index weapon_num_standard_modes
+    }
+    // Ensure max_allowed_mode_idx is not negative if weapon_num_standard_modes is 0 or 1.
+    if (max_allowed_mode_idx < 0) { max_allowed_mode_idx = 0; }
 
-void W_FireShotgun() {
-    // ... check ammo > 0 ...
-    AM_ConsumeAmmo(AMMO_ID_SHELLS, 1);
-    // ... rest of firing logic ...
-};
 
-For your UMP45 (assuming it uses .ammo_nails and IT_NAILS):
-In w_ump45_SetCurrentAmmo:
-    AM_InitializeWeaponView("progs/v_ump45.mdl", AMMO_ID_NAILS, IT_NAILS);
-    // ...rest of setup...
+    if (mode_to_load > max_allowed_mode_idx)
+    {
+        mode_to_load = FIRE_MODE_PRIMARY; // If stored mode is invalid for this weapon, reset to primary
+        // And update the stored slot value to this valid default
+        if (slot_weapon_id == IT_SLOT_MELEE) { self.firemode_slot_melee = mode_to_load; }
+        else if (slot_weapon_id == IT_SLOT_HOLDOUT) { self.firemode_slot_holdout = mode_to_load; }
+        else if (slot_weapon_id == IT_SLOT_SECONDARY) { self.firemode_slot_secondary = mode_to_load; }
+        else if (slot_weapon_id == IT_SLOT_PRIMARY) { self.firemode_slot_primary = mode_to_load; }
+        else if (slot_weapon_id == IT_SLOT_HEAVY) { self.firemode_slot_heavy = mode_to_load; }
+        else if (slot_weapon_id == IT_SLOT_UTILITY) { self.firemode_slot_utility = mode_to_load; }
+        else if (slot_weapon_id == IT_SLOT_AUX1) { self.firemode_slot_aux1 = mode_to_load; }
+        else if (slot_weapon_id == IT_SLOT_AUX2) { self.firemode_slot_aux2 = mode_to_load; }
+        else if (slot_weapon_id == IT_SLOT_AUX3) { self.firemode_slot_aux3 = mode_to_load; }
+    }
 
-In W_FireUMP45_Single (or _Burst_Shot, _Auto):
-    AM_ConsumeAmmo(AMMO_ID_NAILS, 1);
-    // ...rest of firing...
+    self.current_weapon_fire_mode = mode_to_load;
+    
+    self.weapon_fire_released = TRUE;
+    AM_ResetSustainedRecoil();
+}
 
-For your DBShot (Double Barrel Shotgun, uses .ammo_shells and IT_SHELLS):
-In w_dbshot_SetCurrentAmmo:
-    AM_InitializeWeaponView("progs/v_dbshot.mdl", AMMO_ID_SHELLS, IT_SHELLS);
-    // ...rest of setup...
+//============================================================================
+// AM_WeaponFrame_HandleFireRelease
+//============================================================================
+void AM_WeaponFrame_HandleFireRelease()
+{
+    if (!self.button0) 
+    {
+        self.weapon_fire_released = TRUE;
+    }
+}
 
-In W_FireDBShot:
-    // For single barrel
-    AM_ConsumeAmmo(AMMO_ID_SHELLS, 1);
-    // For double barrel
-    // AM_ConsumeAmmo(AMMO_ID_SHELLS, 2); // (called once with 2, or twice with 1 depending on your structure)
-*/
+//============================================================================
+// AM_CanFireSemiAuto
+//============================================================================
+float AM_CanFireSemiAuto()
+{
+    if (self.weapon_fire_released == TRUE)
+    {
+        return TRUE; 
+    }
+    return FALSE; 
+}
+
+//============================================================================
+// AM_CycleFireMode
+// Cycles fire modes and saves the new mode to the current weapon's slot.
+//============================================================================
+void AM_CycleFireMode()
+{
+    float num_total_modes_available;
+    
+    num_total_modes_available = self.weapon_num_standard_modes;
+
+    if (self.weapon_supports_debug_mode == TRUE && cvar("developer") > 0)
+    {
+        num_total_modes_available = num_total_modes_available + 1;
+    }
+
+    if (num_total_modes_available <= 1)
+    {
+        self.weapon_fire_released = TRUE;
+        AM_ResetSustainedRecoil();
+        return;
+    }
+    
+    self.current_weapon_fire_mode = self.current_weapon_fire_mode + 1;
+
+    float loop_reset_point;
+    if (self.weapon_supports_debug_mode == TRUE && cvar("developer") > 0)
+    {
+        loop_reset_point = self.weapon_num_standard_modes + 1; 
+    }
+    else
+    {
+        loop_reset_point = self.weapon_num_standard_modes;
+    }
+
+    if (self.current_weapon_fire_mode >= loop_reset_point)
+    {
+        self.current_weapon_fire_mode = FIRE_MODE_PRIMARY;
+    }
+    
+    // Save the newly set fire mode to the corresponding slot field
+    float current_slot_id = self.weapon; // self.weapon is the IT_SLOT_ flag of the active weapon
+    if (current_slot_id == IT_SLOT_MELEE) { self.firemode_slot_melee = self.current_weapon_fire_mode; }
+    else if (current_slot_id == IT_SLOT_HOLDOUT) { self.firemode_slot_holdout = self.current_weapon_fire_mode; }
+    else if (current_slot_id == IT_SLOT_SECONDARY) { self.firemode_slot_secondary = self.current_weapon_fire_mode; }
+    else if (current_slot_id == IT_SLOT_PRIMARY) { self.firemode_slot_primary = self.current_weapon_fire_mode; }
+    else if (current_slot_id == IT_SLOT_HEAVY) { self.firemode_slot_heavy = self.current_weapon_fire_mode; }
+    else if (current_slot_id == IT_SLOT_UTILITY) { self.firemode_slot_utility = self.current_weapon_fire_mode; }
+    else if (current_slot_id == IT_SLOT_AUX1) { self.firemode_slot_aux1 = self.current_weapon_fire_mode; }
+    else if (current_slot_id == IT_SLOT_AUX2) { self.firemode_slot_aux2 = self.current_weapon_fire_mode; }
+    else if (current_slot_id == IT_SLOT_AUX3) { self.firemode_slot_aux3 = self.current_weapon_fire_mode; }
+
+    self.weapon_fire_released = TRUE; 
+    AM_ResetSustainedRecoil();        
+}

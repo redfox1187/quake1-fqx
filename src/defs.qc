@@ -229,6 +229,27 @@ void		end_sys_globals;		// flag for structure dumping
 void		end_sys_fields;			// flag for structure dumping
 //================================================
 
+
+//================================================
+// AMMO OPERATIONS FORWARD DECLARATIONS (am_operations.qc)
+//================================================
+// Ensure 'const' is REMOVED from these user-defined function declarations
+void(string model_path, float ammo_id_to_read, float items_flag) AM_InitializeWeaponView;
+void(float ammo_id, float amount_to_consume) AM_ConsumeAmmo;
+void(float num_standard_modes, float supports_debug_mode) AM_InitWeaponFireModes;
+void() AM_CycleFireMode;
+void() AM_WeaponFrame_HandleFireRelease;
+float() AM_CanFireSemiAuto;
+void() AM_ResetSustainedRecoil; 
+//================================================
+// WEAPON-SPECIFIC MODE SWITCH FUNCTION FORWARD DECLARATIONS
+//================================================
+void() W_SwitchModeUMP45;  // From w_ump45.qc
+void() W_SwitchModeRahp;   // From w_rahpm1.qc
+void() W_SwitchModeDBShot; // From w_dbshot.qc (NEW)
+// Add other weapon-specific mode switchers here as they are created
+
+
 /*
 ==============================================================================
 
@@ -239,60 +260,85 @@ void		end_sys_fields;			// flag for structure dumping
 
 
 //##FOX: Additions
-.float saved_weapon;        // Store previous weapon (using entity field for persistence)
-.float quick_melee_active;  // Flag to track quick melee state
+.float saved_weapon;        
+.float quick_melee_active;  
 .float quick_melee_debug;
 .float quick_melee_sequence;
 
 .float loot_bonus;
 .float loot_fragcheck;
 
-.float w_melee; // IT_SLOT_MELEE slot.
-.float w_holdout; //##FOX: track which holdout weapon the player has chosen. aka IT_SLOT_HOLDOUT slot.
-.float w_secondary; // IT_SLOT_SECONDARY slot.
-.float w_primary; // IT_SLOT_PRIMARY slot.
-.float w_heavy; // IT_SLOT_HEAVY slot.
+.float w_melee; 
+.float w_holdout; 
+.float w_secondary; 
+.float w_primary; 
+.float w_heavy; 
 
 // Grapple states
-float GRAPPLE_NONE = 0;    // Not fired
-float GRAPPLE_FLYING = 1;  // Anchor in air
-float GRAPPLE_ATTACHED = 2; // Anchor attached to surface
+float GRAPPLE_NONE = 0;    
+float GRAPPLE_FLYING = 1;  
+float GRAPPLE_ATTACHED = 2; 
 
-// Global variables
-.entity anchor;             // Entity reference to the player's anchor
-.float grapple_state;       // Current state of the grapple
-.float last_jump_time;      // Time when player last pressed jump (for double-jump detection)
-.float anchor_length;       // Current length of the grapple rope
-.float grapple_action;      // Current grapple action (0=none, 1=extend, 2=retract)
-.float grapple_time;        // Time of last grapple action
+// Global variables for Grapple
+.entity anchor;             
+.float grapple_state;       
+.float last_jump_time;      
+.float anchor_length;       
+.float grapple_action;      
+.float grapple_time;        
 
-float GRAPPLE_CYCLE_SPEED = 15;     // Base speed for initial extension/retraction
-float GRAPPLE_CONTINUOUS_SPEED = 5; // Speed for continuous extension/retraction
+float GRAPPLE_CYCLE_SPEED = 15;     
+float GRAPPLE_CONTINUOUS_SPEED = 5; 
 float GRAPPLE_ACTION_NONE = 0;
 float GRAPPLE_ACTION_EXTEND = 1;
 float GRAPPLE_ACTION_RETRACT = 2;
 
 //Advanced Recoil System
-.vector recoil_current;     // Current accumulated recoil affecting aim
-.vector recoil_visual;      // Current visual-only recoil (camera kick)
-.float recoil_last_time;    // Last time recoil was applied
-.float recoil_recovery_rate;// How quickly recoil recovers (weapon-specific)
-.vector recoil_pattern;     // Direction bias for the current weapon
-.float recoil_shots_fired;  // Counter for shots fired with current weapon
+.vector recoil_current;     
+.vector recoil_visual;      
+.float recoil_last_time;    
+.float recoil_recovery_rate;
+.vector recoil_pattern;     
+.float recoil_shots_fired;  
 
-// Define fire mode constants
-#define FIRE_MODE_PRIMARY   0
-#define FIRE_MODE_SECONDARY 1
-#define FIRE_MODE_TERTIARY  2  // If you want a third mode for some weapons
+// UMP45 Specific fields (still needed for its internal burst logic)
+.float ump_burst_count;       
+.float ump_last_fire_time;    
+.float ump_burst_active;      
+.float ump_next_burst_time;   
 
-// Variables to store each weapon's fire mode
-.float weapon_mode_holdout;
-.float weapon_mode_secondary;
-.float weapon_mode_primary;
-.float weapon_mode_heavy;
-.float weapon_mode_utility;
-.float weapon_mode_aux1;
-.float weapon_mode_aux2;
+// Generic Weapon Operation Fields (These are the new system)
+.float current_weapon_fire_mode;    
+.float weapon_fire_released;        
+.float weapon_num_standard_modes;   
+.float weapon_supports_debug_mode;  
+
+// In defs.qc, add these to your player entity fields:
+.float  firemode_slot_melee;
+.float  firemode_slot_holdout;
+.float  firemode_slot_secondary;
+.float  firemode_slot_primary;
+.float  firemode_slot_heavy;
+.float  firemode_slot_utility;
+.float  firemode_slot_aux1;
+.float  firemode_slot_aux2;
+.float  firemode_slot_aux3;
+
+// Define generic fire mode constants (can be used by any weapon)
+#define FIRE_MODE_PRIMARY   0  // Generic index for a weapon's primary mode
+#define FIRE_MODE_SECONDARY 1  // Generic index for a weapon's secondary mode
+#define FIRE_MODE_TERTIARY  2  // Generic index for a weapon's tertiary mode
+
+// UMP45 Specific Fire Mode Index Constants (maps generic indices to UMP's specific modes)
+float UMP_FIREMODE_IDX_SINGLE = 0;    // UMP's single shot mode uses generic index 0
+float UMP_FIREMODE_IDX_BURST = 1;     // UMP's burst mode uses generic index 1
+float UMP_FIREMODE_IDX_AUTO = 2;      // UMP's auto mode uses generic index 2
+float UMP_FIREMODE_IDX_DEBUG = 3;     // UMP's debug mode uses index 3
+
+
+// RAHP Specific Fire Mode Index Constants (if needed globally, e.g. by W_HasNoAmmo in weapons.qc)
+float RAHP_FIREMODE_IDX_SMALL_LASER = 0; 
+
 
 //
 // constants

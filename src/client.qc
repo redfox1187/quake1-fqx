@@ -735,13 +735,6 @@ void() PutClientInServer =
 	self.took_damage = 0;  // [NDS] haleyjd
 	self.team = TEAM_NONE;
 	
-    self.weapon_mode_holdout = FIRE_MODE_PRIMARY;
-    self.weapon_mode_secondary = FIRE_MODE_PRIMARY;
-    self.weapon_mode_primary = FIRE_MODE_PRIMARY;
-    self.weapon_mode_heavy = FIRE_MODE_PRIMARY;
-    self.weapon_mode_utility = FIRE_MODE_PRIMARY;
-    self.weapon_mode_aux1 = FIRE_MODE_PRIMARY;
-    self.weapon_mode_aux2 = FIRE_MODE_PRIMARY;
 	
 	if ( coop ) { 
 		self.team = TEAM_HUMANS;
@@ -749,7 +742,7 @@ void() PutClientInServer =
 
 	DecodeLevelParms ();
 	
-	W_SetCurrentAmmo ();
+	W_SetCurrentAmmo (); // This will call the specific weapon's _SetCurrentAmmo, which now calls AM_InitWeaponFireModes
 
     // Initialize the recoil system for this player
     AM_InitRecoilSystem();
@@ -759,7 +752,6 @@ void() PutClientInServer =
 	self.th_die = PlayerDie;
 	
 	self.deadflag = DEAD_NO;
-	// paustime is set by teleporters to keep the player from moving a while
 	self.pausetime = 0;
 
 	local float shouldTelefrag;
@@ -777,7 +769,7 @@ void() PutClientInServer =
 		self.movetype = MOVETYPE_NONE;
 		self.deadflag = DEAD_DEAD;
 		setmodel(self, "");
-		self.view_ofs = '0 0 1'; // not 0 because PlayerPreThink would return out
+		self.view_ofs = '0 0 1'; 
 		self.velocity = '0 0 0';
 
 		if (self.spawn_deferred == 0) {
@@ -800,9 +792,8 @@ void() PutClientInServer =
 
 	self.origin = spot.origin + '0 0 1';
 	self.angles = spot.angles;
-	self.fixangle = TRUE;		// turn this way immediately
+	self.fixangle = TRUE;		
 
-	// oh, this is a hack!
 	setmodel (self, "progs/eyes.mdl");
 	modelindex_eyes = self.modelindex;
 
@@ -812,7 +803,7 @@ void() PutClientInServer =
 	setsize (self, VEC_HULL_MIN, VEC_HULL_MAX);
 	
 	self.view_ofs = '0 0 22';
-	self.velocity = '0 0 0';	// 1998-07-21 Player moves after respawn fix by Xian
+	self.velocity = '0 0 0';	
 	
 	player_stand1 ();
 	
@@ -824,7 +815,7 @@ void() PutClientInServer =
 
 	spawn_tdeath (self.origin, self);
 	
-	stuffcmd(self, "-attack\n"); // prevent shooting after respawning
+	stuffcmd(self, "-attack\n"); 
 };
 
 
