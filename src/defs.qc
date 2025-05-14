@@ -249,6 +249,17 @@ void() W_SwitchModeRahp;   // From w_rahpm1.qc
 void() W_SwitchModeDBShot; // From w_dbshot.qc (NEW)
 // Add other weapon-specific mode switchers here as they are created
 
+// Quake Super Nailgun
+void w_q_snailgun_SetCurrentAmmo (void);
+void W_Fire_Q_Snailgun (void);
+
+
+//============================================================================
+// Weapon: Ak47 Assault Rifle (w_ak47.qc)
+//============================================================================
+void w_ak47_SetCurrentAmmo (void);    // Called when the Ak47 is selected/equipped.
+void W_FireAk47 (void);               // Main firing function called by W_Attack.
+void W_SwitchModeAk47 (void);         // Called by ToggleFireMode impulse.
 
 /*
 ==============================================================================

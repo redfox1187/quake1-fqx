@@ -17,16 +17,6 @@
     See file, 'COPYING', for details.
 */
 
-// External function forward declarations (ensure these are in defs.qc or globally visible)
-// From am_operations.qc:
-// void() AM_WeaponFrame_HandleFireRelease;
-// void() AM_ResetSustainedRecoil; 
-
-// From specific weapon files (e.g., w_ump45.qc, w_rahpm1.qc, w_dbshot.qc):
-// void() W_SwitchModeUMP45;
-// void() W_SwitchModeRahp;
-// void() W_SwitchModeDBShot; 
-
 // Standard game functions
 void (entity targ, entity inflictor, entity attacker, float damage) T_Damage;
 void () player_run;
@@ -70,7 +60,12 @@ void() W_Precache =
 	precache_sound ("weapons/boltback.wav");		// dry weapon sound (UMP)
 	precache_sound ("weapons/weaponclick.wav");		// weapon switch/click sound
 	
-	precache_model ("progs/grapple_anchor.mdl");	// grapple's hook
+	    precache_model("progs/v_ak47.mdl");         // Ak47 view model
+    precache_sound("weapons/ak47-fire-1.wav");      // Ak47 firing sound
+    precache_sound("weapons/ak47-fire-2.wav");      // Ak47 firing sound
+    precache_sound("weapons/ak47_switch.wav");    // Ak47 mode switch/select sound
+	
+		precache_model ("progs/grapple_anchor.mdl");	// grapple's hook
 };
 
 float() crandom =
@@ -254,47 +249,6 @@ void(float shotcount, vector dir, vector spread) FireBullets =
 	ApplyMultiDamage ();
 };
 
-/*
-================
-W_FireShotgun (Restored from earlycopy_weapons.txt)
-This is for a standard shotgun, not the DBShot which uses am_buckshot.
-================
-*/
-void() W_FireShotgun =
-{
-	local vector dir;
-
-	sound (self, CHAN_WEAPON, "weapons/guncock.wav", 1, ATTN_NORM);	
-	self.punchangle_x = -2;
-	self.currentammo = self.ammo_shells = self.ammo_shells - 1;
-    
-        dir = aim (self, 100000);
-        FireBullets (6, dir, '0.04 0.04 0');
-
-};
-
-/*
-================
-W_FireSuperShotgun (Restored from earlycopy_weapons.txt)
-================
-*/
-void() W_FireSuperShotgun =
-{
-	local vector dir;
-
-	// If only 1 shell, fire like standard shotgun (single barrel)
-	if (self.currentammo == 1) // This checks currentammo, which might be set by W_SetCurrentAmmo
-	{
-		W_FireShotgun (); // This will consume 1 shell via W_FireShotgun
-		return;
-	}
-		
-	sound (self ,CHAN_WEAPON, "weapons/shotgn2.wav", 1, ATTN_NORM);	
-	self.punchangle_x = -4;
-	self.currentammo = self.ammo_shells = self.ammo_shells - 2; // Consume 2 shells
-	dir = aim (self, 100000);
-	FireBullets (14, dir, '0.14 0.08 0'); // 14 pellets, wider spread
-};
 
 
 //==============================================================================
@@ -423,6 +377,7 @@ void() w_rahpm1_SetCurrentAmmo;
 void() w_grapple_SetCurrentAmmo;
 void() w_dbshot_SetCurrentAmmo;
 void() w_ump45_SetCurrentAmmo;
+void() w_ak47_SetCurrentAmmo;
 
 void() W_SetCurrentAmmo =
 {
@@ -449,9 +404,7 @@ void() W_SetCurrentAmmo =
 	}
 	else if (self.weapon == IT_SLOT_HEAVY) 
 	{
-		self.currentammo = self.ammo_nails;
-		self.weaponmodel = "progs/v_nail2.mdl";
-		self.items = self.items | IT_NAILS;
+		w_ak47_SetCurrentAmmo (); 
 	}
 	else if (self.weapon == IT_SLOT_UTILITY) 
 	{
@@ -534,7 +487,7 @@ W_Attack
 void()	player_axe1; void() player_axeb1; void() player_axec1; void() player_axed1;
 void()	player_shot1; void() player_nail1; void() player_light1; void() player_rocket1;
 
-void()	W_FireRahp; void() W_FireDBShot; void() W_FireGrapple; void() W_FireUMP45;
+void()	W_FireRahp; void() W_FireDBShot; void() W_FireGrapple; void() W_FireUMP45; void() W_FireAk47;
 // W_FireShotgun, W_FireSuperShotgun, W_FireRocket, W_FireLightning are defined above.
 
 void() W_Attack =
@@ -552,7 +505,7 @@ void() W_Attack =
 	else if (self.weapon == IT_SLOT_HOLDOUT) { player_shot1 (); W_FireRahp (); }
 	else if (self.weapon == IT_SLOT_SECONDARY) { player_shot1 (); W_FireDBShot (); } // Assuming DBShot doesn't use FireBullets directly anymore
 	else if (self.weapon == IT_SLOT_PRIMARY) { player_shot1 (); W_FireUMP45 (); }
-	else if (self.weapon == IT_SLOT_HEAVY) { player_nail1 (); } // Calls am_nails functions
+	else if (self.weapon == IT_SLOT_HEAVY) { player_shot1 (); W_FireAk47 (); }
 	else if (self.weapon == IT_SLOT_UTILITY) { player_rocket1(); W_FireGrapple(); }
 	else if (self.weapon == IT_SLOT_AUX1) { player_rocket1(); W_FireRocket(); self.attack_finished = time + 0.8; }
 	else if (self.weapon == IT_SLOT_AUX2) { player_light1(); sound (self, CHAN_AUTO, "weapons/lstart.wav", 1, ATTN_NORM); W_FireLightning(); /* attack_finished handled by W_FireLightning */}
@@ -617,7 +570,7 @@ void() ToggleFireMode =
     if (self.weapon == IT_SLOT_HOLDOUT) { W_SwitchModeRahp(); }
     else if (self.weapon == IT_SLOT_SECONDARY) { W_SwitchModeDBShot(); }
     else if (self.weapon == IT_SLOT_PRIMARY) { W_SwitchModeUMP45(); }
-    else if (self.weapon == IT_SLOT_HEAVY) { sprint(self, "Super Nailgun mode switch TBD\n"); }
+    else if (self.weapon == IT_SLOT_HEAVY) { W_SwitchModeAk47(); }
     else if (self.weapon == IT_SLOT_UTILITY) { sprint(self, "Utility slot mode switch TBD\n"); }
     else if (self.weapon == IT_SLOT_AUX1) { sprint(self, "Rocket Launcher mode switch TBD\n"); }
     else if (self.weapon == IT_SLOT_AUX2) { sprint(self, "Lightning Gun mode switch TBD\n"); }

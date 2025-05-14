@@ -22,25 +22,6 @@ Features:
 ==============================================================================
 */
 
-// External functions from am_ballistics.qc
-// void(float instances, float caliber, float bullet_type, float accuracy, float tracer_interval) W_am_fire_bullets;
-
-// External functions from am_recoil.qc (or your recoil system)
-// void(float strength, float spread, float vertical_bias, float sustained_multiplier, float max_sustained) AM_ApplyRecoil;
-// void(vector pattern, float recovery_rate) AM_SetRecoilPattern;
-// void() AM_ResetSustainedRecoil;
-
-// External functions from am_operations.qc
-// void(float num_standard_modes, float supports_debug_mode) AM_InitWeaponFireModes;
-// void() AM_CycleFireMode;
-// float() AM_CanFireSemiAuto;
-
-// External function from items.qc (or wherever AM_InitializeWeaponView and AM_ConsumeAmmo are)
-// void(string model_path, float ammo_id_enum, float item_flag_bit) AM_InitializeWeaponView;
-// void(float ammo_id_enum, float amount_to_consume) AM_ConsumeAmmo;
-
-
-
 // Define constants for UMP45 properties
 float UMP_ACCURACY_SINGLE = 1.5;       
 float UMP_ACCURACY_BURST = 1.2;        
@@ -51,12 +32,6 @@ float UMP_RECOIL_VERTICAL_BIAS = 2.5;
 float UMP_RECOIL_RECOVERY = 3.0;       
 float UMP_FIRERATE = 60 / UMP_RPM;     
 
-// UMP-specific player state fields (burst logic remains weapon-specific for now)
-// These should be in your defs.qc:
-// .float ump_burst_count;       
-// .float ump_last_fire_time;    // Still useful for UMP's own recoil timing / sustained fire checks
-// .float ump_burst_active;      
-// .float ump_next_burst_time;   
 
 // Forward declarations for functions within this file
 void() W_FireUMP45_Burst_Shot;  

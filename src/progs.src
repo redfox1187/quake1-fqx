@@ -25,6 +25,8 @@ weapons/holdout/w_rahpm1.qc
 weapons/secondary/w_ump45.qc
 
 weapons/primary/w_dbshot.qc
+weapons/primary/w_ak47.qc
+weapons/primary/w_q_snailgun.qc
 
 weapons/utility/w_grapple.qc
 world.qc
