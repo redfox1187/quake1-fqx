@@ -54,15 +54,17 @@ void() SetChangeParms =
 {
     if(reset_flag)
     {
-        setspawnparms(self); // This function likely reloads parms if player is restarting a level.
-                             // Our parm15 should be fine as it would be reloaded from its previous state.
+        setspawnparms(self);
+        // This function likely reloads parms if player is restarting a level.
+        // Our parm13, parm14, parm15 should be fine as they would be reloaded.
         return;
     }
 
     if (self.health <= 0 || deathmatch)
     {
-        SetNewParms (); // If dead or in deathmatch, player gets fresh parms for next level.
-                        // SetNewParms will set parm15 = 0, which is correct.
+        SetNewParms ();
+        // If dead or in deathmatch, player gets fresh parms for next level.
+        // SetNewParms will set parm13, parm14, parm15 = 0, which is correct.
         return;
     }
  
@@ -71,15 +73,14 @@ void() SetChangeParms =
     // cap super health
     if (self.health > self.max_health)
         self.health = self.max_health;
-
     if (self.health < self.max_health / 2) // Ensure player has at least half health
         self.health = self.max_health / 2;
-        
+    
     parm1 = self.items;
     parm2 = self.health;
     parm3 = self.armorvalue;
 
-  if (self.ammo_shells < 25) // If carrying shells, ensure at least 25
+    if (self.ammo_shells < 25) // If carrying shells, ensure at least 25
         parm4 = 25;
     else
         parm4 = self.ammo_shells;
@@ -90,19 +91,21 @@ void() SetChangeParms =
     parm8 = self.weapon;
     parm9 = self.armortype * 100; // Armor type (0-3 maps to 0-0.8 roughly)
 
-   // --- BEGIN PACKING FIRE MODES (Arithmetic Emulation) ---
+    // ##FOX: Save weapon loadout into parm13 and parm14
+    Loadout_EncodeParms(self);
+    
+    // --- BEGIN PACKING FIRE MODES (Arithmetic Emulation) into parm15 ---
     float packed_fire_modes = 0;
-
     // Ensure fire mode values are within 0-3 before packing
-    packed_fire_modes = packed_fire_modes + (self.firemode_slot_melee     & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_MELEE;
-    packed_fire_modes = packed_fire_modes + (self.firemode_slot_holdout   & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_HOLDOUT;
-    packed_fire_modes = packed_fire_modes + (self.firemode_slot_secondary & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_SECONDARY;
-    packed_fire_modes = packed_fire_modes + (self.firemode_slot_primary   & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_PRIMARY;
-    packed_fire_modes = packed_fire_modes + (self.firemode_slot_heavy     & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_HEAVY;
-    packed_fire_modes = packed_fire_modes + (self.firemode_slot_utility   & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_UTILITY;
-    packed_fire_modes = packed_fire_modes + (self.firemode_slot_aux1      & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_AUX1;
-    packed_fire_modes = packed_fire_modes + (self.firemode_slot_aux2      & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_AUX2;
-    packed_fire_modes = packed_fire_modes + (self.firemode_slot_aux3      & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_AUX3;
+    packed_fire_modes = packed_fire_modes + ((self.firemode_slot_melee     & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_MELEE);
+    packed_fire_modes = packed_fire_modes + ((self.firemode_slot_holdout   & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_HOLDOUT);
+    packed_fire_modes = packed_fire_modes + ((self.firemode_slot_secondary & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_SECONDARY);
+    packed_fire_modes = packed_fire_modes + ((self.firemode_slot_primary   & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_PRIMARY);
+    packed_fire_modes = packed_fire_modes + ((self.firemode_slot_heavy     & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_HEAVY);
+    packed_fire_modes = packed_fire_modes + ((self.firemode_slot_utility   & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_UTILITY);
+    packed_fire_modes = packed_fire_modes + ((self.firemode_slot_aux1      & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_AUX1);
+    packed_fire_modes = packed_fire_modes + ((self.firemode_slot_aux2      & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_AUX2);
+    packed_fire_modes = packed_fire_modes + ((self.firemode_slot_aux3      & FIREMODE_PERSIST_MASK) * FIREMODE_PLACE_VALUE_SLOT_AUX3);
     
     parm15 = packed_fire_modes; // Store packed fire modes
     // --- END PACKING FIRE MODES ---
@@ -118,28 +121,31 @@ void() SetNewParms =
     else
         parm2 = 100; // Normal starting health
         
-    parm3 = 0;                      // armor value
-    parm4 = 25;                     // shells (for shotgun if IT_SLOT_HOLDOUT isn't shotgun)
-                                    // This will be given if player picks up a shell weapon.
-                                    // Or, if IT_SLOT_HOLDOUT *is* a shotgun, this is its starting ammo.
-    parm5 = 0;                      // nails
-    parm6 = 0;                      // rockets
-    parm7 = 0;                      // cells
-    parm8 = IT_SLOT_HOLDOUT;        // active weapon is the holdout slot
-    parm9 = 0;                      // armor type (0% protection) - this is consistent with DecodeLevelParms: self.armortype = parm9 * 0.01
+    parm3 = 0; // armor value
+    parm4 = 25; // shells (for shotgun if IT_SLOT_HOLDOUT isn't shotgun)
+                // This will be given if player picks up a shell weapon.
+    parm5 = 0; // nails
+    parm6 = 0; // rockets
+    parm7 = 0; // cells
+    parm8 = IT_SLOT_HOLDOUT; // active weapon is the holdout slot
+    parm9 = 0; // armor type (0% protection) - this is consistent with DecodeLevelParms: self.armortype = parm9 * 0.01
     
     // These seem to be related to map statistics tracking, not player inventory carry-over.
-    parm10 = 0;                     // total secrets (for the map, usually set by worldspawn)
-    parm11 = 0;                     // total monsters (for the map)
-    parm12 = 0;                     // kills (player's kills on the map)
-    parm13 = 1;                     // weapon frame (likely overridden by W_SetCurrentAmmo)
-    parm14 = 0;                     // armor type (seems redundant with parm9, but your file has it. Keep as is.)
+    parm10 = 0; // total secrets (for the map, usually set by worldspawn)
+    parm11 = 0; // total monsters (for the map)
+    parm12 = 0; // kills (player's kills on the map)
+    
+    // ##FOX: Initialize Loadout Parms to 0 for a fresh start.
+    // This will result in WEAPON_ID_NONE for all slots after Loadout_DecodeParms,
+    // which then triggers Loadout_SetDefaults in PutClientInServer.
+    parm13 = 0; 
+    parm14 = 0; 
 
     // --- INITIALIZE PACKED FIRE MODES ---
-    parm15 = 0;                     // Weapon mode flags: 0 means all slots default to FIRE_MODE_PRIMARY (0)
+    parm15 = 0; // Weapon mode flags: 0 means all slots default to FIRE_MODE_PRIMARY (0)
     // --- END INITIALIZE ---
     
-    parm16 = 0;                     // unused in standard Quake
+    parm16 = 0; // unused in standard Quake
 };
 
 void() DecodeLevelParms =
@@ -796,18 +802,35 @@ void() PutClientInServer =
 	self.took_damage = 0;  // [NDS] haleyjd
 	self.team = TEAM_NONE;
 	
-	
-	if ( coop ) { 
+	if ( coop ) 
+	{ 
 		self.team = TEAM_HUMANS;
 	}
 
-	DecodeLevelParms ();
+	DecodeLevelParms (); // This handles parms 1-9 and your fire modes from parm15
 	
-	W_SetCurrentAmmo (); // This will call the specific weapon's _SetCurrentAmmo, which now calls AM_InitWeaponFireModes
+    // ##FOX: Decode weapon loadout from parm13, parm14 and set defaults if needed
+    Loadout_DecodeParms(self); // Unpack whatever was in parm13, parm14 into self.loadout_id_*
+
+    // If primary weapon slots are empty after decoding (e.g. from SetNewParms zeroing them),
+    // it implies a fresh start or corrupted data, so apply the default weapon loadout.
+    // You can make this check more specific if WEAPON_ID_NONE is a valid state for some slots
+    // even with a saved loadout. For now, checking a couple of key slots.
+    if (self.loadout_id_melee == WEAPON_ID_NONE && self.loadout_id_holdout == WEAPON_ID_NONE) 
+    {
+        // This means parms were likely 0 (e.g., from SetNewParms for a fresh game).
+        // Apply the default weapon IDs to the self.loadout_id_* fields.
+        Loadout_SetDefaults(self);
+    }
+    // ##FOX: End Loadout Logic
+	
+	W_SetCurrentAmmo (); // This will call the specific weapon's _SetCurrentAmmo, 
+                         // which calls AM_InitWeaponFireModes.
+                         // Eventually, W_SetCurrentAmmo will need to use the loadout_id_* fields.
 
     // Initialize the recoil system for this player
     AM_InitRecoilSystem();
-
+    
 	self.attack_finished = time;
 	self.th_pain = player_pain;
 	self.th_die = PlayerDie;
@@ -816,15 +839,18 @@ void() PutClientInServer =
 	self.pausetime = 0;
 
 	local float shouldTelefrag;
-
-	if (self.spawn_deferred > 0 && time >= self.spawn_deferred) {
+	if (self.spawn_deferred > 0 && time >= self.spawn_deferred) 
+    {
 		dprint("forcing telefrag on this spawn\n");
 		shouldTelefrag = TRUE;
-	} else {
+	} 
+    else 
+    {
 		shouldTelefrag = FALSE;
 	}
 	spot = SelectSpawnPoint(shouldTelefrag);
-	if (spot == world) {
+	if (spot == world) 
+    {
 		self.takedamage = DAMAGE_NO;
 		self.solid = SOLID_NOT;
 		self.movetype = MOVETYPE_NONE;
@@ -832,8 +858,8 @@ void() PutClientInServer =
 		setmodel(self, "");
 		self.view_ofs = '0 0 1'; 
 		self.velocity = '0 0 0';
-
-		if (self.spawn_deferred == 0) {
+		if (self.spawn_deferred == 0) 
+        {
 			dprint("no spawns available! deferring\n");
 			self.spawn_deferred = time + 5;
 		}
@@ -845,7 +871,6 @@ void() PutClientInServer =
 		self.weaponmodel = "";
 		self.weaponframe = 0;
 		self.weapon = 0;
-
 		return;
 	}
 
@@ -876,9 +901,8 @@ void() PutClientInServer =
 
 	spawn_tdeath (self.origin, self);
 	
-	stuffcmd(self, "-attack\n"); 
+	stuffcmd(self, "-attack\n");
 };
-
 
 /*
 =============================================================================

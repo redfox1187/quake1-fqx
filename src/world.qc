@@ -1,4 +1,4 @@
-/*  Copyright (C) 1996-2022 id Software LLC
+/* Copyright (C) 1996-2022 id Software LLC
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -48,7 +48,6 @@ void() main =
 
 	precache_file ("gfx/complete.lmp");
 	precache_file ("gfx/inter.lmp");
-
 	precache_file ("gfx/ranking.lmp");
 	precache_file ("gfx/vidmodes.lmp");
 	precache_file ("gfx/finale.lmp");
@@ -98,7 +97,6 @@ void() main =
 	precache_file ("gfx/netmen5.lmp");
 	
 	precache_file ("gfx/sell.lmp");
-	
 	precache_file ("gfx/help0.lmp");
 	precache_file ("gfx/help1.lmp");
 	precache_file ("gfx/help2.lmp");
@@ -188,12 +186,14 @@ World Types:
 */
 //=======================
 float startingserverflags;
- 
+
 void() worldspawn =
 {
-	startingserverflags = serverflags;
-	lastspawn = world;
-	InitBodyQueue ();
+    
+    // Existing worldspawn code continues below
+    startingserverflags = serverflags;
+    lastspawn = world;
+    InitBodyQueue ();
 
 	// custom map attributes
 	if (self.model == "maps/e1m8.bsp")
@@ -204,9 +204,9 @@ void() worldspawn =
 	// the area based ambient sounds MUST be the first precache_sounds
 
 	// custom map title
-	self.message = GetMapName(self.message);
+	self.message = GetMapName(self.message); // Assuming GetMapName is defined elsewhere
 
-	// player precaches	
+// player precaches	
 	W_Precache ();			// get weapon precaches
 
 	// sounds used from C physics code
@@ -220,7 +220,7 @@ void() worldspawn =
 	precache_sound ("player/land2.wav");		// player hurt landing
 	precache_sound ("player/drown1.wav");		// drowning pain
 	precache_sound ("player/drown2.wav");		// drowning pain
-	precache_sound ("player/gasp1.wav");		// gasping for air
+	precache_sound ("player/gasp1.wav");			// gasping for air
 	precache_sound ("player/gasp2.wav");		// taking breath
 	precache_sound ("player/h2odeath.wav");		// drowning death
 
@@ -262,7 +262,7 @@ void() worldspawn =
 	precache_sound ("player/death5.wav");
 
 // ax sounds	
-	precache_sound ("weapons/ax1.wav");			// ax swoosh
+	precache_sound ("weapons/ax1.wav");		// ax swoosh
 	precache_sound ("player/axhit1.wav");		// ax hit meat
 	precache_sound ("player/axhit2.wav");		// ax hit world
 
@@ -309,7 +309,6 @@ void() worldspawn =
 	precache_model ("progs/backpack.mdl");
 
 	precache_model ("progs/zom_gib.mdl");
-
 	precache_model ("progs/v_light.mdl");
 	
 
@@ -353,7 +352,7 @@ void() worldspawn =
 	// 11 SLOW PULSE NOT FADE TO BLACK
 	lightstyle(11, "abcdefghijklmnopqrrqponmlkjihgfedcba");
 	
-	// styles 32-62 are assigned by the light program for switchable lights
+// styles 32-62 are assigned by the light program for switchable lights
 
 	// 63 testing
 	lightstyle(63, "a");
@@ -362,9 +361,7 @@ void() worldspawn =
 void StartFrame() {
 	teamplay = cvar("teamplay");
 	skill = cvar("skill");
-	cheats_allowed = cvar("sv_cheats");
-
-    // save off a global here so it gets included in savegames
+	cheats_allowed = cvar("sv_cheats"); // save off a global here so it gets included in savegames
     if (!campaign_valid) {
         campaign_valid = TRUE;
         campaign = cvar("campaign");
@@ -420,5 +417,3 @@ void(entity ent) CopyToBodyQueue =
 	setsize (bodyqueue_head, ent.mins, ent.maxs);
 	bodyqueue_head = bodyqueue_head.owner;
 };
-
-

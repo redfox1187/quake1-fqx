@@ -4,3 +4,8 @@
 *.txt
 mod notes
 src - clean/
+src/fteqcc64.exe
+src/fteqcc64.exe.db
+src/imgtool64.exe
+src/iqmtool64.exe
+src/_FQX Compile.bat

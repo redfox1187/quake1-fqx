@@ -8,6 +8,9 @@ ai.qc
 combat.qc
 itemnames.qc
 items.qc
+
+op_loadout.qc
+
 weapons.qc
 
 weapons/ammo/am_recoil.qc
@@ -19,8 +22,6 @@ weapons/ammo/am_laser.qc
 weapons/ammo/am_nails.qc
 
 weapons/holdout/w_rahpm1.qc
-//weapons/holdout/w_mk23_anim.qc
-//weapons/holdout/w_mk23.qc
 
 weapons/secondary/w_ump45.qc
 

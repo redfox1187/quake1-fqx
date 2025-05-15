@@ -1,4 +1,4 @@
-/*  Copyright (C) 1996-2022 id Software LLC
+/* Copyright (C) 1996-2022 id Software LLC
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -84,7 +84,7 @@ entity		msg_entity;			// destination of single entity writes
 //
 // required prog functions
 //
-void() 		main;						// only for testing
+void() 		main;				// only for testing
 
 void()		StartFrame;
 
@@ -165,7 +165,7 @@ void		end_sys_globals;		// flag for structure dumping
 .entity		chain;
 .float		deadflag;
 
-.vector		view_ofs;			// add to origin to get eye point
+.vector		view_ofs;		// add to origin to get eye point
 
 
 .float		button0;		// fire
@@ -202,7 +202,6 @@ void		end_sys_globals;		// flag for structure dumping
 .float		yaw_speed;
 
 .entity		aiment;
-
 .entity 	goalentity;		// a movetarget or an enemy
 
 .float		spawnflags;
@@ -216,31 +215,31 @@ void		end_sys_globals;		// flag for structure dumping
 .float		dmg_save;
 .entity		dmg_inflictor;
 
-.entity		owner;		// who launched a missile
+.entity		owner;			// who launched a missile
 .vector		movedir;	// mostly for doors, but also used for waterjump
 
 .string		message;		// trigger messages
 
-.float		sounds;		// either a cd track number or sound number
+.float		sounds;			// either a cd track number or sound number
 
 .string		noise, noise1, noise2, noise3;	// contains names of wavs to play
 
 //================================================
-void		end_sys_fields;			// flag for structure dumping
+void		end_sys_fields;		// flag for structure dumping
 //================================================
 
 
 //================================================
 // AMMO OPERATIONS FORWARD DECLARATIONS (am_operations.qc)
 //================================================
-// Ensure 'const' is REMOVED from these user-defined function declarations
 void(string model_path, float ammo_id_to_read, float items_flag) AM_InitializeWeaponView;
 void(float ammo_id, float amount_to_consume) AM_ConsumeAmmo;
 void(float num_standard_modes, float supports_debug_mode) AM_InitWeaponFireModes;
 void() AM_CycleFireMode;
 void() AM_WeaponFrame_HandleFireRelease;
 float() AM_CanFireSemiAuto;
-void() AM_ResetSustainedRecoil; 
+void() AM_ResetSustainedRecoil;
+
 //================================================
 // WEAPON-SPECIFIC MODE SWITCH FUNCTION FORWARD DECLARATIONS
 //================================================
@@ -279,7 +278,7 @@ void W_SwitchModeAk47 (void);         // Called by ToggleFireMode impulse.
 .float loot_bonus;
 .float loot_fragcheck;
 
-.float w_melee; 
+.float w_melee;
 .float w_holdout; 
 .float w_secondary; 
 .float w_primary; 
@@ -287,7 +286,7 @@ void W_SwitchModeAk47 (void);         // Called by ToggleFireMode impulse.
 
 // Grapple states
 float GRAPPLE_NONE = 0;    
-float GRAPPLE_FLYING = 1;  
+float GRAPPLE_FLYING = 1;
 float GRAPPLE_ATTACHED = 2; 
 
 // Global variables for Grapple
@@ -296,8 +295,7 @@ float GRAPPLE_ATTACHED = 2;
 .float last_jump_time;      
 .float anchor_length;       
 .float grapple_action;      
-.float grapple_time;        
-
+.float grapple_time;
 float GRAPPLE_CYCLE_SPEED = 15;     
 float GRAPPLE_CONTINUOUS_SPEED = 5; 
 float GRAPPLE_ACTION_NONE = 0;
@@ -310,19 +308,20 @@ float GRAPPLE_ACTION_RETRACT = 2;
 .float recoil_last_time;    
 .float recoil_recovery_rate;
 .vector recoil_pattern;     
-.float recoil_shots_fired;  
+.float recoil_shots_fired;
+.float recoil_last_shot; // ##Quedra: Added this based on your Code Guide for completeness
 
 // UMP45 Specific fields (still needed for its internal burst logic)
 .float ump_burst_count;       
 .float ump_last_fire_time;    
 .float ump_burst_active;      
-.float ump_next_burst_time;   
+.float ump_next_burst_time;
 
 // Generic Weapon Operation Fields (These are the new system)
 .float current_weapon_fire_mode;    
 .float weapon_fire_released;        
 .float weapon_num_standard_modes;   
-.float weapon_supports_debug_mode;  
+.float weapon_supports_debug_mode;
 
 // In defs.qc, add these to your player entity fields:
 .float  firemode_slot_melee;
@@ -339,16 +338,17 @@ float GRAPPLE_ACTION_RETRACT = 2;
 #define FIRE_MODE_PRIMARY   0  // Generic index for a weapon's primary mode
 #define FIRE_MODE_SECONDARY 1  // Generic index for a weapon's secondary mode
 #define FIRE_MODE_TERTIARY  2  // Generic index for a weapon's tertiary mode
+// ##Quedra: Consider adding #define FIRE_MODE_DEBUG 3 if used with weapon_supports_debug_mode
 
 // UMP45 Specific Fire Mode Index Constants (maps generic indices to UMP's specific modes)
-float UMP_FIREMODE_IDX_SINGLE = 0;    // UMP's single shot mode uses generic index 0
-float UMP_FIREMODE_IDX_BURST = 1;     // UMP's burst mode uses generic index 1
-float UMP_FIREMODE_IDX_AUTO = 2;      // UMP's auto mode uses generic index 2
-float UMP_FIREMODE_IDX_DEBUG = 3;     // UMP's debug mode uses index 3
+float UMP_FIREMODE_IDX_SINGLE = 0; // UMP's single shot mode uses generic index 0
+float UMP_FIREMODE_IDX_BURST = 1;  // UMP's burst mode uses generic index 1
+float UMP_FIREMODE_IDX_AUTO = 2;   // UMP's auto mode uses generic index 2
+float UMP_FIREMODE_IDX_DEBUG = 3;  // UMP's debug mode uses index 3
 
 
 // RAHP Specific Fire Mode Index Constants (if needed globally, e.g. by W_HasNoAmmo in weapons.qc)
-float RAHP_FIREMODE_IDX_SMALL_LASER = 0; 
+float RAHP_FIREMODE_IDX_SMALL_LASER = 0;
 
 // --- BEGIN FIRE MODE PERSISTENCE CONSTANTS (BITFLAG EMULATION) ---
 // Mask to extract a single fire mode value (0-3)
@@ -369,9 +369,73 @@ float FIREMODE_PLACE_VALUE_SLOT_AUX3      = 65536;// 2^16
 // --- END FIRE MODE PERSISTENCE CONSTANTS ---
 
 
+//=============================================================================
+// ##Quedra: Additions for Loadout System (in defs.qc)
+
+// Player fields to store the currently equipped weapon ID for each slot
+// (These will be populated from parms at level start)
+.float loadout_id_melee;       // Weapon ID for IT_SLOT_MELEE
+.float loadout_id_holdout;     // Weapon ID for IT_SLOT_HOLDOUT
+.float loadout_id_secondary;   // Weapon ID for IT_SLOT_SECONDARY
+.float loadout_id_primary;     // Weapon ID for IT_SLOT_PRIMARY
+.float loadout_id_heavy;       // Weapon ID for IT_SLOT_HEAVY
+.float loadout_id_utility;     // Weapon ID for IT_SLOT_UTILITY
+.float loadout_id_aux1;        // Weapon ID for IT_SLOT_AUX1
+.float loadout_id_aux2;        // Weapon ID for IT_SLOT_AUX2
+.float loadout_id_aux3;        // Weapon ID for IT_SLOT_AUX3
+
+// Weapon ID Constants (Max 31 unique weapons + NONE)
+float WEAPON_ID_NONE = 0;         // Represents an empty or unassigned slot
+float WEAPON_ID_AXE = 1;
+float WEAPON_ID_RAHPM1 = 2;       // Your RAHP M1
+float WEAPON_ID_DBSHOT = 3;       // Your Double Barrel Shotgun
+float WEAPON_ID_UMP45 = 4;        // Your UMP45
+float WEAPON_ID_AK47 = 5;         // Your AK47
+float WEAPON_ID_GRAPPLE = 6;      // Your Grappling Hook
+float WEAPON_ID_RL = 7;           // Vanilla Rocket Launcher
+float WEAPON_ID_LG = 8;           // Vanilla Lightning Gun
+// ... IDs 9 through 31 are available for future weapons
+
+// Loadout System Constants
+float LOADOUT_WEAPONID_BITS = 5;                            // 5 bits per ID (0-31)
+float LOADOUT_WEAPONID_MASK = 31;                           // (1<<5) - 1,  or  (2^5)-1
+
+// Place Value constants for packing IDs into parm13
+// (parm13 stores Melee, Holdout, Secondary, Primary, Heavy, Utility)
+float LOADOUT_PV_P1_SLOT0 = 1;          // 32^0, for Melee
+float LOADOUT_PV_P1_SLOT1 = 32;         // 32^1, for Holdout
+float LOADOUT_PV_P1_SLOT2 = 1024;       // 32^2, for Secondary
+float LOADOUT_PV_P1_SLOT3 = 32768;      // 32^3, for Primary
+float LOADOUT_PV_P1_SLOT4 = 1048576;    // 32^4, for Heavy
+float LOADOUT_PV_P1_SLOT5 = 33554432;   // 32^5, for Utility
+
+// Place Value constants for packing IDs into parm14
+// (parm14 stores Aux1, Aux2, Aux3)
+float LOADOUT_PV_P2_SLOT0 = 1;          // 32^0, for Aux1
+float LOADOUT_PV_P2_SLOT1 = 32;         // 32^1, for Aux2
+float LOADOUT_PV_P2_SLOT2 = 1024;       // 32^2, for Aux3
+
+// Forward declarations for op_loadout.qc functions (original loadout system)
+void Loadout_SetDefaults(entity player);
+void Loadout_EncodeParms(entity player);
+void Loadout_DecodeParms(entity player);
+float GetWeaponIDForITSlot(entity player, float it_slot_flag);
+// ##Quedra: End Additions for Loadout System
+//=============================================================================
+
+// ##Quedra: PRINT Level constants (ensure these are defined for extended sprint)
+// ##Quedra: Placed here to be before built-in list that might reference extended sprint implicitly or explicitly
+float PRINT_LOW    = 0;
+float PRINT_MEDIUM = 1;
+float PRINT_HIGH   = 2;
+float PRINT_CHAT   = 3;
+//=============================================================================
+
+
 //
 // constants
 //
+// ##Quedra: Standard constants like FALSE, TRUE, FL_*, MOVETYPE_*, etc. are below.
 
 float	FALSE					= 0;
 float 	TRUE					= 1;
@@ -389,14 +453,14 @@ float	FL_ONGROUND				= 512;		// standing on something
 float	FL_PARTIALGROUND		= 1024;		// not all corners are valid
 float	FL_WATERJUMP			= 2048;		// player jumping out of water
 float	FL_JUMPRELEASED			= 4096;		// for jump debouncing
-float 	FL_ISBOT     			= 8192; 	// mal: this will be set on bot players
+float 	FL_ISBOT     			= 8192;		// mal: this will be set on bot players
 float 	FL_NO_PLAYERS			= 16384;	// mal: used by the spawn point editor
 float 	FL_NO_MONSTERS			= 32768;	// mal: used by the spawn point editor
 float   FL_NO_BOTS				= 65536;	// mal: any item marked with this will be ignored by bots.
-float 	FL_OBJECTIVE			= 131072; 	// mal: any item marked with this is an objective of some kind.
+float 	FL_OBJECTIVE			= 131072;	// mal: any item marked with this is an objective of some kind.
 
 // edict.movetype values
-float	MOVETYPE_NONE			= 0;	// never moves
+float	MOVETYPE_NONE			= 0;		// never moves
 //float	MOVETYPE_ANGLENOCLIP	= 1;
 //float	MOVETYPE_ANGLECLIP		= 2;
 float	MOVETYPE_WALK			= 3;	// players only
@@ -482,7 +546,6 @@ float	STATE_DOWN		= 3;
 vector	VEC_ORIGIN = '0 0 0';
 vector	VEC_HULL_MIN = '-16 -16 -24';
 vector	VEC_HULL_MAX = '16 16 32';
-
 vector	VEC_HULL2_MIN = '-32 -32 -24';
 vector	VEC_HULL2_MAX = '32 32 64';
 
@@ -591,7 +654,7 @@ float 	EF_PENTALIGHT   = 32;
 float	EF_CANDLELIGHT	= 64;
 
 // messages
-float	MSG_BROADCAST	= 0;		// unreliable to all
+float	MSG_BROADCAST	= 0;	// unreliable to all
 float	MSG_ONE			= 1;		// reliable to one (msg_entity)
 float	MSG_ALL			= 2;		// reliable to all
 float	MSG_INIT		= 3;		// write to the init string
@@ -611,8 +674,8 @@ float COLOR_BLACK		= 0;
 float COLOR_CYAN		= 244;
 float COLOR_ORANGE		= 95;
 
-float DRAW_AI_SINGLE_FRAME		= .1; // mal: use for AI that think every 10th of a second
-float DRAW_GAME_SINGLE_FRAME	= -1; // mal: use in game code that updates every frame.
+float DRAW_AI_SINGLE_FRAME		= .1;	// mal: use for AI that think every 10th of a second
+float DRAW_GAME_SINGLE_FRAME	= -1;	// mal: use in game code that updates every frame.
 
 // player expanded settings flags
 float PEF_CHANGEONLYNEW	= 1;
@@ -710,7 +773,7 @@ float	AS_MISSILE		= 4;
 // Combat style
 .float 	combat_style;
 float   CS_NONE 		= 0; // default - used for bosses or other monsters that don't move
-float 	CS_RANGED		= 1;
+float 	CS_RANGED		= 1; 
 float 	CS_MELEE		= 2;
 float 	CS_MIXED		= 3; // can do ranged or melee equally.
 
@@ -721,7 +784,6 @@ float 	CS_MIXED		= 3; // can do ranged or melee equally.
 
 .float 		attack_finished;
 .float		pain_finished;
-
 .float		invincible_finished;
 .float		invisible_finished;
 .float		super_damage_finished;
@@ -733,12 +795,12 @@ float 	CS_MIXED		= 3; // can do ranged or melee equally.
 .float		rad_time;
 .float		fly_sound;
 
-.float 		healthrot_nextcheck; // if grabbed Mega-Health, the next time we'll rot the players health
+.float 		healthrot_nextcheck;	// if grabbed Mega-Health, the next time we'll rot the players health
 
 .float		axhitme;
 
 .float		show_hostile;	// set to time+0.2 whenever a client fires a
-							// weapon or takes damage.  Used to alert
+							// weapon or takes damage. Used to alert
 							// monsters that otherwise would let the player go
 .float		jump_flag;		// player jump flag
 .float		swim_flag;		// player swimming sound flag
@@ -827,9 +889,9 @@ void makevectorsfixed(vector ang);
 // builtin functions
 //
 
-void(vector ang)	makevectors		= #1;		// sets v_forward, etc globals
+void(vector ang)	makevectors		= #1;	// sets v_forward, etc globals
 void(entity e, vector o) setorigin	= #2;
-void(entity e, string m) setmodel	= #3;		// set movetype and solid first
+void(entity e, string m) setmodel	= #3;	// set movetype and solid first
 void(entity e, vector min, vector max) setsize = #4;
 // #5 was removed
 void() break						= #6;
@@ -848,8 +910,7 @@ void(entity e) remove				= #15;
 // An entity will also be ignored for testing if forent == test,
 // forent->owner == test, or test->owner == forent
 // a forent of world is ignored
-void(vector v1, vector v2, float nomonsters, entity forent) traceline = #16;	
-
+void(vector v1, vector v2, float nomonsters, entity forent) traceline = #16;
 entity() checkclient				= #17;	// returns a client to look for
 entity(entity start, .string fld, string match) find = #18;
 string(string s) precache_sound		= #19;
@@ -857,30 +918,30 @@ string(string s) precache_model		= #20;
 void(entity client, string s)stuffcmd = #21;
 entity(vector org, float rad) findradius = #22;
 void(string s, ...) bprint				= #0:ex_bprint;
-void(entity client, string s, ...) sprint = #0:ex_sprint;
+void(entity client, string s, ...) sprint = #0:ex_sprint; // ##Quedra: This is your existing sprint declaration
 void(string s, ...) dprint				= #25;
 string(float f) ftos				= #26;
 string(vector v) vtos				= #27;
-void() coredump						= #28;		// prints all edicts
+void() coredump						= #28;	// prints all edicts
 void() traceon						= #29;		// turns statment trace on
 void() traceoff						= #30;
-void(entity e) eprint				= #31;		// prints an entire edict
+void(entity e) eprint				= #31;	// prints an entire edict
 float(float yaw, float dist) walkmove	= #32;	// returns TRUE or FALSE
 // #33 was removed
-float() droptofloor= #34;	// TRUE if landed on floor
+float() droptofloor= #34;		// TRUE if landed on floor
 void(float style, string value) lightstyle = #35;
-float(float v) rint					= #36;		// round to nearest int
+float(float v) rint					= #36;	// round to nearest int
 float(float v) floor				= #37;		// largest integer <= v
 float(float v) ceil					= #38;		// smallest integer >= v
 // #39 was removed
-float(entity e) checkbottom			= #40;		// true if self is on ground
-float(vector v) pointcontents		= #41;		// returns a CONTENT_*
+float(entity e) checkbottom			= #40;	// true if self is on ground
+float(vector v) pointcontents		= #41;	// returns a CONTENT_*
 // #42 was removed
 float(float f) fabs = #43;
-vector(entity e, float speed) aim = #44;		// returns the shooting vector
+vector(entity e, float speed) aim = #44;	// returns the shooting vector
 float(string s) cvar = #45;						// return cvar.value
-void(string s) localcmd = #46;					// put string into local que
-entity(entity e) nextent = #47;					// for looping through all ents
+void(string s) localcmd = #46;				// put string into local que
+entity(entity e) nextent = #47;				// for looping through all ents
 void(vector o, vector d, float color, float count) particle = #48;// start a particle effect
 void() ChangeYaw = #49;						// turn towards self.ideal_yaw
 											// at self.yaw_speed
@@ -922,23 +983,21 @@ void(string s) changelevel = #70;
 
 void(string var, string val) cvar_set = #72;	// sets cvar.value
 
-void(entity client, string s, ...) centerprint = #0:ex_centerprint;	// sprint, but in middle
+void(entity client, string s, ...) centerprint = #0:ex_centerprint; // sprint, but in middle
 
 void(vector pos, string samp, float vol, float atten) ambientsound = #74;
 
-string(string s) precache_model2	= #75;		// registered version only
+string(string s) precache_model2	= #75;	// registered version only
 string(string s) precache_sound2	= #76;		// registered version only
-string(string s) precache_file2		= #77;		// registered version only
+string(string s) precache_file2		= #77;	// registered version only
 
 void(entity e) setspawnparms		= #78;		// set parm1... to the
 												// values at level start
 												// for coop respawn
 
 float() finaleFinished = #0:ex_finaleFinished;
-
 // Plays a sound that only "client" can hear. Useful for announcers...
 void localsound( entity client, string sample ) = #0:ex_localsound;
-
 // Debug rendering functions.
 void draw_point( vector point, float colormap, float lifetime, float depthtest ) = #0:ex_draw_point;
 void draw_line( vector start, vector end, float colormap, float lifetime, float depthtest ) = #0:ex_draw_line;
@@ -968,6 +1027,14 @@ void prompt( entity client, string text, float numChoices ) = #0:ex_prompt;
 void promptchoice( entity client, string text, float impulse ) = #0:ex_promptchoice;
 void clearprompt( entity client ) = #0:ex_clearprompt;
 
+// ##Quedra: Additions for MISSING built-ins for Master Loadout System
+// Using #0:ex_ style for broad compatibility, assuming engine exports these common names.
+string(string cvar_name) cvar_string    = #0:ex_cvar_string;
+string(string s1, string s2, ...) strcat = #0:ex_strcat;
+float(string s) strlen                  = #0:ex_strlen;
+string(string s, float start_index, float length) substring = #0:ex_substring;
+float(string s) stof                    = #0:ex_stof;
+// ##Quedra: End additions for MISSING built-ins
 
 //============================================================================
 
@@ -992,5 +1059,3 @@ void(entity targ, entity inflictor, entity attacker, float damage) T_Damage;
 float (entity e, float healamount, float ignore) T_Heal; // health function
 
 float(entity targ, entity inflictor) CanDamage;
-
-
