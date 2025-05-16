@@ -13,7 +13,8 @@ The actual weapon IDs assigned here define your mod's starting "default loadout"
 */
 void Loadout_SetDefaults(entity player) {
     player.loadout_id_melee     = WEAPON_ID_AXE;
-    player.loadout_id_holdout   = WEAPON_ID_RAHPM1;
+	// player.loadout_id_holdout   = WEAPON_ID_RAHPM1; // This will be the default once the player's select LOADOUT features are implemented.
+	player.loadout_id_holdout   = WEAPON_ID_M93R;
     player.loadout_id_secondary = WEAPON_ID_UMP45;
     player.loadout_id_primary   = WEAPON_ID_DBSHOT;
     player.loadout_id_heavy     = WEAPON_ID_AK47;

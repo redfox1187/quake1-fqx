@@ -260,6 +260,13 @@ void w_ak47_SetCurrentAmmo (void);    // Called when the Ak47 is selected/equipp
 void W_FireAk47 (void);               // Main firing function called by W_Attack.
 void W_SwitchModeAk47 (void);         // Called by ToggleFireMode impulse.
 
+//============================================================================
+// Weapon: M93R Pistol (w_m93r.qc)
+//============================================================================
+void w_m93r_SetCurrentAmmo (void);    // Called when the Ak47 is selected/equipped.
+void W_FireM93R (void);               // Main firing function called by W_Attack.
+void W_SwitchModeM93R (void);         // Called by ToggleFireMode impulse.
+
 /*
 ==============================================================================
 
@@ -316,6 +323,12 @@ float GRAPPLE_ACTION_RETRACT = 2;
 .float ump_last_fire_time;    
 .float ump_burst_active;      
 .float ump_next_burst_time;
+
+// ##Quedra: M93R Specific Fields
+.float m93r_burst_count;
+.float m93r_burst_active;
+.float m93r_next_burst_time;
+// ##Quedra: End M93R Specific Fields
 
 // Generic Weapon Operation Fields (These are the new system)
 .float current_weapon_fire_mode;    
@@ -394,6 +407,7 @@ float WEAPON_ID_AK47 = 5;         // Your AK47
 float WEAPON_ID_GRAPPLE = 6;      // Your Grappling Hook
 float WEAPON_ID_RL = 7;           // Vanilla Rocket Launcher
 float WEAPON_ID_LG = 8;           // Vanilla Lightning Gun
+float WEAPON_ID_M93R = 9;         // ##Quedra: Beretta M93R
 // ... IDs 9 through 31 are available for future weapons
 
 // Loadout System Constants

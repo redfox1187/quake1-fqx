@@ -65,6 +65,12 @@ void() W_Precache =
     precache_sound("weapons/ak47-fire-2.wav");      // Ak47 firing sound
     precache_sound("weapons/ak47_switch.wav");    // Ak47 mode switch/select sound
 	
+	// ##Quedra: M93R Sounds (Using RAHP view model, already precached)
+	precache_sound ("weapons/9mm_Pistol-1.wav");        // ##Quedra: New
+	precache_sound ("weapons/9mm_Pistol-2.wav");        // ##Quedra: New
+	precache_sound ("weapons/9mm_Pistol_Switch-01.wav"); // ##Quedra: New
+	// ##Quedra: End M93R Precache
+	
 		precache_model ("progs/grapple_anchor.mdl");	// grapple's hook
 };
 
@@ -385,6 +391,7 @@ void() w_grapple_SetCurrentAmmo;
 void() w_dbshot_SetCurrentAmmo;
 void() w_ump45_SetCurrentAmmo;
 void() w_ak47_SetCurrentAmmo;
+void() w_m93r_SetCurrentAmmo;
 
 void() W_SetCurrentAmmo =
 {
@@ -397,9 +404,17 @@ void() W_SetCurrentAmmo =
 		self.weaponmodel = "progs/v_axe.mdl";
 	}
 	else if (self.weapon == IT_SLOT_HOLDOUT) 
-	{
-		w_rahpm1_SetCurrentAmmo ();
-	}
+{
+    // ##Quedra: Check which holdout weapon is equipped via loadout system
+    if (GetWeaponIDForITSlot(self, IT_SLOT_HOLDOUT) == WEAPON_ID_M93R)
+    {
+        w_m93r_SetCurrentAmmo();
+    }
+    else // Default to RAHP M1 if not M93R or if GetWeaponIDForITSlot isn't fully implemented yet
+    {
+        w_rahpm1_SetCurrentAmmo();
+    }
+}
 	else if (self.weapon == IT_SLOT_SECONDARY) 
 	{
 		w_dbshot_SetCurrentAmmo (); 
@@ -493,7 +508,7 @@ void()	player_axe1; void() player_axeb1; void() player_axec1; void() player_axed
 void()	player_shot1; void() player_nail1;
 void() player_light1; void() player_rocket1;
 
-void()	W_FireRahp; void() W_FireDBShot; void() W_FireGrapple; void() W_FireUMP45; void() W_FireAk47;
+void()	W_FireRahp; void() W_FireDBShot; void() W_FireGrapple; void() W_FireUMP45; void() W_FireAk47; void() W_FireM93R;
 // W_FireShotgun, W_FireSuperShotgun, W_FireRocket, W_FireLightning are defined above.
 
 void() W_Attack =
@@ -511,7 +526,18 @@ void() W_Attack =
 		else if (r<0.5) player_axeb1 (); else if (r<0.75) player_axec1 (); else player_axed1 ();
 		self.attack_finished = time + 0.5;
 	}
-	else if (self.weapon == IT_SLOT_HOLDOUT) { player_shot1 (); W_FireRahp (); }
+	else if (self.weapon == IT_SLOT_HOLDOUT) 
+	{ 
+		player_shot1(); // Assuming generic firing animation start
+		if (GetWeaponIDForITSlot(self, IT_SLOT_HOLDOUT) == WEAPON_ID_M93R)
+		{
+			W_FireM93R();
+		}
+		else // Default to RAHP M1
+		{
+			W_FireRahp(); 
+		}
+	}
 	else if (self.weapon == IT_SLOT_SECONDARY) { player_shot1 (); W_FireDBShot (); } 
 	else if (self.weapon == IT_SLOT_PRIMARY) { player_shot1 (); W_FireUMP45 (); }
 	else if (self.weapon == IT_SLOT_HEAVY) { player_shot1 (); W_FireAk47 (); }
@@ -579,7 +605,17 @@ ToggleFireMode - Updated to use new generic system for supported weapons
 */
 void() ToggleFireMode =
 {
-    if (self.weapon == IT_SLOT_HOLDOUT) { W_SwitchModeRahp(); }
+	if (self.weapon == IT_SLOT_HOLDOUT) 
+	{ 
+		if (GetWeaponIDForITSlot(self, IT_SLOT_HOLDOUT) == WEAPON_ID_M93R)
+		{
+			W_SwitchModeM93R();
+		}
+		else // Default to RAHP M1
+		{
+			W_SwitchModeRahp();
+		}
+	}
     else if (self.weapon == IT_SLOT_SECONDARY) { W_SwitchModeDBShot(); }
     else if (self.weapon == IT_SLOT_PRIMARY) { W_SwitchModeUMP45(); }
     else if (self.weapon == IT_SLOT_HEAVY) { W_SwitchModeAk47(); }

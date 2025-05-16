@@ -22,6 +22,7 @@ weapons/ammo/am_laser.qc
 weapons/ammo/am_nails.qc
 
 weapons/holdout/w_rahpm1.qc
+weapons/holdout/w_m93r.qc
 
 weapons/secondary/w_ump45.qc
 
