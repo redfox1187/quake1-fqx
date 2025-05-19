@@ -62,7 +62,7 @@ weapons/primary/w_dbshot.qc     // ##FQX - ##Quedra: DBShot's IT_SLOT_FLAG is IT
 weapons/primary/w_ak47.qc       // ##FQX - ##Quedra: AK47's IT_SLOT_FLAG is IT_SLOT_HEAVY in its file. Path noted for testing.
 weapons/primary/w_q_snailgun.qc // ##FQX - ##Quedra: Quake Super Nailgun.
 
-weapons/utility/w_grapple.qc    // ##FQX - ##Quedra: Grapple logic.
+
 
 //=============================================================================
 // ##Quedra: PART 7 - CORE GAMEPLAY LOGIC & ENTITY BEHAVIORS
@@ -74,12 +74,8 @@ player.qc         // ##IDSOFT    - ##Quedra: player_run() is called by am_firemo
 client.qc         // ##IDSOFT
 world.qc          // ##IDSOFT 
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 bots/bot.qc				// bot support
-=======
-=======
->>>>>>> Stashed changes
+
 maps.qc           // ##FQXCUSTOM - ##Quedra: Assuming this is your custom map logic file.
 doors.qc          // ##IDSOFT
 buttons.qc        // ##IDSOFT
@@ -112,13 +108,13 @@ monsters/shub.qc        // ##IDSOFT
 //=============================================================================
 // ##Quedra: PART 9 - BOT SUPPORT (If applicable)
 //=============================================================================
-bots/bot.qc             // ##IDSOFT 
+//bots/bot.qc             // ##IDSOFT 
 
 //=============================================================================
 // ##Quedra: End of progs.src
-<<<<<<< Updated upstream
+
 //=============================================================================
->>>>>>> Stashed changes
-=======
+
+
 //=============================================================================
->>>>>>> Stashed changes
+

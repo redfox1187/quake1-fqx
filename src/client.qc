@@ -1145,16 +1145,7 @@ void() PlayerJump =
 	sound (self, CHAN_BODY, "player/plyrjmp8.wav", 1, ATTN_NORM);
 	self.velocity_z = self.velocity_z + 270;
 	
-	    // For tracking double-jump to release grapple
-    if (self.flags & FL_JUMPRELEASED && self.grapple_state == GRAPPLE_ATTACHED)
-    {
-        // If they jumped recently, check for double-jump to release anchor
-        if (time - self.last_jump_time < 0.4)
-        {
-            grapple_release();
-        }
-        self.last_jump_time = time;
-    }
+
 	
 };
 
@@ -1606,7 +1597,7 @@ called when a player disconnects from a server
 void() ClientDisconnect =
 {
 
-    GrappleCheckDeath(); //##FOX Check to remove grapple
+
 	
 	if (gameover)
 		return;

@@ -242,7 +242,7 @@ void w_m93r_SetCurrentAmmo (void);
 void w_ump45_SetCurrentAmmo (void);
 void w_dbshot_SetCurrentAmmo (void); 
 void w_rahpm1_SetCurrentAmmo (void); // ##Quedra: Added for completeness
-void w_grapple_SetCurrentAmmo (void); // ##Quedra: Added for completeness
+
 
 // --- Fire Functions ---
 void W_Fire_Q_Snailgun (void); 
@@ -251,7 +251,7 @@ void W_FireM93R (void);
 void W_FireUMP45 (void);
 void W_FireDBShot (void); 
 void W_FireRahp (void); // ##Quedra: Added for completeness
-void W_FireGrapple (void); // ##Quedra: Added for completeness
+
 
 
 //-----------------------------------------------------------------------------

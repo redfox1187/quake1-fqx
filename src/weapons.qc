@@ -387,7 +387,7 @@ void() W_FireGrenade =
 // PLAYER WEAPON USE
 //===============================================================================
 void() w_rahpm1_SetCurrentAmmo;
-void() w_grapple_SetCurrentAmmo;
+
 void() w_dbshot_SetCurrentAmmo;
 void() w_ump45_SetCurrentAmmo;
 void() w_ak47_SetCurrentAmmo;
@@ -429,7 +429,8 @@ void() W_SetCurrentAmmo =
 	}
 	else if (self.weapon == IT_SLOT_UTILITY) 
 	{
-		w_grapple_SetCurrentAmmo();
+		self.currentammo = 0; 
+		self.weaponmodel = "progs/v_axe.mdl";
 	}
 	else if (self.weapon == IT_SLOT_AUX1) 
 	{
@@ -508,7 +509,7 @@ void()	player_axe1; void() player_axeb1; void() player_axec1; void() player_axed
 void()	player_shot1; void() player_nail1;
 void() player_light1; void() player_rocket1;
 
-void()	W_FireRahp; void() W_FireDBShot; void() W_FireGrapple; void() W_FireUMP45; void() W_FireAk47; void() W_FireM93R;
+void()	W_FireRahp; void() W_FireDBShot; void() W_FireUMP45; void() W_FireAk47; void() W_FireM93R;
 // W_FireShotgun, W_FireSuperShotgun, W_FireRocket, W_FireLightning are defined above.
 
 void() W_Attack =
@@ -541,7 +542,7 @@ void() W_Attack =
 	else if (self.weapon == IT_SLOT_SECONDARY) { player_shot1 (); W_FireDBShot (); } 
 	else if (self.weapon == IT_SLOT_PRIMARY) { player_shot1 (); W_FireUMP45 (); }
 	else if (self.weapon == IT_SLOT_HEAVY) { player_shot1 (); W_FireAk47 (); }
-	else if (self.weapon == IT_SLOT_UTILITY) { player_rocket1(); W_FireGrapple(); }
+	else if (self.weapon == IT_SLOT_UTILITY) { player_rocket1(); }
 	else if (self.weapon == IT_SLOT_AUX1) { player_rocket1(); W_FireRocket(); self.attack_finished = time + 0.8; }
 	else if (self.weapon == IT_SLOT_AUX2) { player_light1();
 	sound (self, CHAN_AUTO, "weapons/lstart.wav", 1, ATTN_NORM); W_FireLightning(); /* attack_finished handled by W_FireLightning */}
@@ -592,8 +593,8 @@ void CheatCommand() {
 };
 
 // CycleWeaponCommand, ServerflagsCommand, QuadCheat
-void() CycleWeaponCommand; // Assuming defined elsewhere or stub
-void() CycleWeaponReverseCommand; // Assuming defined elsewhere or stub
+//void() CycleWeaponCommand; // Assuming defined elsewhere or stub
+//void() CycleWeaponReverseCommand; // Assuming defined elsewhere or stub
 void() ServerflagsCommand = { serverflags = serverflags * 2 + 1; };
 void() QuadCheat = { if (cvar("developer") == 0 && (deathmatch || coop)) return; self.super_time = 1;
 self.super_damage_finished = time + 30; self.items = self.items | IT_QUAD; dprint ("quad cheat\n"); };
@@ -732,25 +733,19 @@ void() Quick_Melee_ForceCancel =
 ImpulseCommands
 ============
 */
-void() grapple_release; // Forward declaration for grapple logic
+//void() grapple_release; // Forward declaration for grapple logic
 
 void() ImpulseCommands =
 {
 	if (self.impulse >= 1 && self.impulse <= 8) W_ChangeWeapon ();
 	if (self.impulse == 9) CheatCommand ();
-	if (self.impulse == 10) CycleWeaponCommand (); 
+//	if (self.impulse == 10) CycleWeaponCommand (); 
 	if (self.impulse == 11) ServerflagsCommand ();
-	if (self.impulse == 12) CycleWeaponReverseCommand(); 
+//	if (self.impulse == 12) CycleWeaponReverseCommand(); 
 	if (self.impulse == 20) Quick_Grenade();	
     if (self.impulse == 21 && self.quick_melee_active != 1) Quick_Melee_Start();
 	if (self.impulse == 22) ToggleFireMode();	
     // Grappling hook impulses (23, 24, 25) from your file
-    if (self.impulse == 23) { if (self.grapple_state == GRAPPLE_ATTACHED) { if (self.grapple_action == GRAPPLE_ACTION_EXTEND) self.grapple_action = GRAPPLE_ACTION_NONE;
-else { self.grapple_action = GRAPPLE_ACTION_EXTEND; self.anchor_length = self.anchor_length + GRAPPLE_CYCLE_SPEED;} } }
-    if (self.impulse == 24) { if (self.grapple_state == GRAPPLE_ATTACHED) { if (self.grapple_action == GRAPPLE_ACTION_RETRACT) self.grapple_action = GRAPPLE_ACTION_NONE;
-else { self.grapple_action = GRAPPLE_ACTION_RETRACT; self.anchor_length = self.anchor_length - GRAPPLE_CYCLE_SPEED;
-if(self.anchor_length < 0) self.anchor_length = 0;} } }
-    if (self.impulse == 25) { if (self.grapple_state == GRAPPLE_ATTACHED || self.grapple_state == GRAPPLE_FLYING) { self.grapple_action = GRAPPLE_ACTION_NONE; grapple_release(); } } // Allow release if flying too
     if (self.impulse == 200) Quick_Melee_ToggleDebug();
     if (self.impulse == 201) Quick_Melee_ForceCancel();
 	// ##Quedra: Impulse to apply the loadout defined by the 'ql_master_key' cvar

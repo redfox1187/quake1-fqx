@@ -593,7 +593,7 @@ void() PlayerDie =
 	self.effects = 0;
 	self.modelindex = modelindex_player;	// don't use eyes
 
-    GrappleCheckDeath(); //##FOX Check to remove grapple on death
+
 
 	if (deathmatch || coop)
 		DropBackpack();
