@@ -1,61 +1,117 @@
+//=============================================================================
+// progs.src - FQX Mod
+// ##Quedra: Master compilation list for FTEQCC. Order is crucial.
+// ##Quedra: Adhering to FQX tagging and KEX engine considerations.
+//=============================================================================
+
+// ##Quedra: Target output file for the compiled game logic.
 ../progs.dat
 
-defs.qc
-subs.qc
-maps.qc
-fight.qc
-ai.qc
-combat.qc
-itemnames.qc
-items.qc
+//=============================================================================
+// ##Quedra: PART 1 - CORE DEFINITIONS (Absolutely First)
+//=============================================================================
+defs_1.qc       // ##FQXCUSTOM - ##Quedra: Base definitions, likely from standard Quake, adapted for FQX.
+defs_2.qc       // ##FQXCUSTOM - ##Quedra: FQX Mod custom global fields, constants, and MOST forward declarations.
+defs_3.qc       // ##FQXCUSTOM - ##Quedra: FQX Mod entity field definitions.
+subs.qc         // ##IDSOFT    - ##Quedra: Standard Quake utility functions.
 
-op_loadout.qc
+//=============================================================================
+// ##Quedra: PART 2 - FUNDAMENTAL GAME SYSTEMS & AI
+// ##Quedra: Order adjusted to place AI components before combat, as per Rerelease structure.
+//=============================================================================
+fight.qc        // ##IDSOFT    - ##Quedra: Standard Quake AI combat routines. (Likely defines 'FoundTarget' or related)
+ai.qc           // ##IDSOFT    - ##Quedra: Standard Quake general AI functions. (May also define 'FoundTarget')
+combat.qc       // ##IDSOFT    - ##Quedra: Standard Quake T_Damage, SpawnBlood, etc. (Uses 'FoundTarget')
+itemnames.qc    // ##IDSOFT    - ##Quedra: Standard Quake item names (or ##FQXCUSTOM if you've altered it significantly).
+items.qc        // ##IDSOFT    - ##Quedra: Standard Quake item logic, IT_SLOT_* flags.
 
-weapons.qc
+op_loadout.qc   // ##FQX       - ##Quedra: Custom loadout system. Defines WEAPON_ID_*, GetWeaponIDForITSlot.
 
-weapons/ammo/am_recoil.qc
-weapons/ammo/am_operations.qc
+//=============================================================================
+// ##Quedra: PART 3 - GENERIC ADVANCED MUNITIONS (AM_*) CORE MODULES
+// ##Quedra: These are foundational for the new weapon mechanics. Path: weapons/ammo/
+//=============================================================================
+weapons/ammo/am_recoil.qc       // ##FQX - ##Quedra: Recoil system. Defines AM_ApplyRecoil, AM_SetRecoilPattern, AM_ResetSustainedRecoil.
+weapons/ammo/am_operations.qc   // ##FQX - ##Quedra: Weapon state operations. Uses am_recoil. Defines AM_GetAmmoCount, AM_ConsumeAmmo, AM_CycleFireMode, AM_InitWeaponFireModes (single param).
+weapons/ammo/am_ballistics.qc   // ##FQX - ##Quedra: Standard bullet projectile logic. Defines W_am_fire_bullet.
 
-weapons/ammo/am_buckshot.qc
-weapons/ammo/am_ballistics.qc
-weapons/ammo/am_laser.qc
-weapons/ammo/am_nails.qc
+//=============================================================================
+// ##Quedra: PART 4 - GENERIC FIRE MODE EXECUTION LOGIC (NEW)
+// ##Quedra: Depends on am_recoil, am_operations, am_ballistics. Path: weapons/ammo/
+//=============================================================================
+weapons/ammo/am_firemodes.qc    // ##FQX - ##Quedra: Defines AM_ExecuteStandardFire_Parameterized, AM_StartBurstFire_Parameterized, AM_Burst_Think.
 
-weapons/holdout/w_rahpm1.qc
-weapons/holdout/w_m93r.qc
+//=============================================================================
+// ##Quedra: PART 5 - SPECIALIZED AMMUNITION TYPE MODULES
+// ##Quedra: Path: weapons/ammo/
+//=============================================================================
+weapons/ammo/am_buckshot.qc    // ##FQX - ##Quedra: Buckshot projectile logic.
+weapons/ammo/am_laser.qc       // ##FQX - ##Quedra: Laser projectile logic.
+weapons/ammo/am_nails.qc       // ##FQX - ##Quedra: Nail/Spike logic. (Calls W_BestWeapon from weapons.qc - needs forward declaration)
 
-weapons/secondary/w_ump45.qc
+//=============================================================================
+// ##Quedra: PART 6 - INDIVIDUAL WEAPON DATA SHEETS & DISPATCHERS (w_*.qc)
+// ##Quedra: These are new or heavily modified for FQX.
+//=============================================================================
+weapons/holdout/w_rahpm1.qc     // ##FQX 
+weapons/holdout/w_m93r.qc       // ##FQX
 
-weapons/primary/w_dbshot.qc
-weapons/primary/w_ak47.qc
-weapons/primary/w_q_snailgun.qc
+weapons/secondary/w_ump45.qc    // ##FQX - ##Quedra: UMP45's IT_SLOT_FLAG is IT_SLOT_PRIMARY in its file. Path noted for testing.
 
-weapons/utility/w_grapple.qc
-world.qc
-client.qc
-player.qc
-monsters.qc
-doors.qc
-buttons.qc
-triggers.qc
-plats.qc
-misc.qc
+weapons/primary/w_dbshot.qc     // ##FQX - ##Quedra: DBShot's IT_SLOT_FLAG is IT_SLOT_SECONDARY in its file. Path noted for testing.
+weapons/primary/w_ak47.qc       // ##FQX - ##Quedra: AK47's IT_SLOT_FLAG is IT_SLOT_HEAVY in its file. Path noted for testing.
+weapons/primary/w_q_snailgun.qc // ##FQX - ##Quedra: Quake Super Nailgun.
 
-monsters/ogre.qc
-monsters/fiend.qc
-monsters/shambler.qc
-monsters/knight.qc
-monsters/grunt.qc
-monsters/scrag.qc
-monsters/rottweiler.qc
-monsters/zombie.qc
-monsters/chthon.qc
+weapons/utility/w_grapple.qc    // ##FQX - ##Quedra: Grapple logic.
 
-monsters/spawn.qc		// registered
-monsters/hellknight.qc	// registered
-monsters/rotfish.qc		// registered
-monsters/vore.qc		// registered
-monsters/enforcer.qc	// registered
-monsters/shub.qc		// registered
+//=============================================================================
+// ##Quedra: PART 7 - CORE GAMEPLAY LOGIC & ENTITY BEHAVIORS
+//=============================================================================
+// ##Quedra: weapons.qc calls W_Fire* from w_*.qc (forward declared in defs_2.qc).
+// ##Quedra: It defines W_BestWeapon (forward declared in defs_2.qc for am_nails.qc).
+weapons.qc        // ##FQXCUSTOM - ##Quedra: Heavily modified for FQX systems. Original base was IDSOFT.
+player.qc         // ##IDSOFT    - ##Quedra: player_run() is called by am_firemodes.qc (ensure forward declared in defs_2.qc).
+client.qc         // ##IDSOFT
+world.qc          // ##IDSOFT 
 
+<<<<<<< Updated upstream
 bots/bot.qc				// bot support
+=======
+maps.qc           // ##FQXCUSTOM - ##Quedra: Assuming this is your custom map logic file.
+doors.qc          // ##IDSOFT
+buttons.qc        // ##IDSOFT
+triggers.qc       // ##IDSOFT
+plats.qc          // ##IDSOFT
+misc.qc           // ##IDSOFT 
+
+//=============================================================================
+// ##Quedra: PART 8 - MONSTER DEFINITIONS
+//=============================================================================
+monsters.qc       // ##IDSOFT 
+// --- Individual Monster Types ---
+monsters/ogre.qc        // ##IDSOFT
+monsters/fiend.qc       // ##IDSOFT
+monsters/shambler.qc    // ##IDSOFT
+monsters/knight.qc      // ##IDSOFT
+monsters/grunt.qc       // ##IDSOFT
+monsters/scrag.qc       // ##IDSOFT
+monsters/rottweiler.qc  // ##IDSOFT
+monsters/zombie.qc      // ##IDSOFT
+monsters/chthon.qc      // ##IDSOFT
+// --- Registered Monster Types ---
+monsters/spawn.qc       // ##IDSOFT
+monsters/hellknight.qc  // ##IDSOFT
+monsters/rotfish.qc     // ##IDSOFT
+monsters/vore.qc        // ##IDSOFT
+monsters/enforcer.qc    // ##IDSOFT
+monsters/shub.qc        // ##IDSOFT
+
+//=============================================================================
+// ##Quedra: PART 9 - BOT SUPPORT (If applicable)
+//=============================================================================
+bots/bot.qc             // ##IDSOFT 
+
+//=============================================================================
+// ##Quedra: End of progs.src
+//=============================================================================
+>>>>>>> Stashed changes

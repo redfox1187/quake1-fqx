@@ -774,61 +774,54 @@ void() W_WeaponFrame =
 {
     if (time < self.attack_finished) 
     {
-        // Weapon is in cooldown.
+        // ##Quedra: Weapon is in cooldown.
         if (self.button0) 
         {
-            // Player is pressing/holding the fire button DURING cooldown.
-            // This action "spoils" any previous release. The player must release
-            // and press again *after* the cooldown to fire a new semi/burst action.
+            // ##Quedra: Player is pressing/holding the fire button DURING cooldown.
+            // ##Quedra: This action "spoils" any previous release. The player must release
+            // ##Quedra: and press again *after* the cooldown to fire a new semi/burst action.
             self.weapon_fire_released = FALSE;
         }
         else
         {
-            // Player is NOT pressing fire button during cooldown.
-            // This means they released it. Allow weapon_fire_released to become TRUE.
-            AM_WeaponFrame_HandleFireRelease();
+            // ##Quedra: Player is NOT pressing fire button during cooldown.
+            // ##Quedra: This means they released it. AM_WeaponFrame_HandleFireRelease will set weapon_fire_released = TRUE.
+            // ##Quedra: Also, handle burst interruption if fire released during an active burst.
+            AM_WeaponFrame_HandleFireRelease(); // ##Quedra: Sets self.weapon_fire_released = TRUE
+
+            // ##Quedra: Generalized burst stop logic if fire button is released mid-burst.
+            if (self.burst_active) 
+            {
+                self.burst_active = FALSE; // ##Quedra: Signal AM_Burst_Think to stop.
+                                           // ##Quedra: AM_Burst_Think will handle nulling its own think, 
+                                           // ##Quedra: setting attack_finished, and resetting recoil on its next execution.
+            }
         }
-        return; // Done for this frame, weapon is busy.
+        return; // ##Quedra: Done for this frame, weapon is busy.
     }
 
-    // If we reach here, cooldown is OVER (time >= self.attack_finished).
+    // ##Quedra: If we reach here, cooldown is OVER (time >= self.attack_finished).
     if (self.impulse)
     {
         ImpulseCommands();
-        // If an impulse changed the weapon, W_SetCurrentAmmo would have been called,
-        // which resets relevant states including attack_finished, potentially.
-        // If attack_finished was reset to 'time' by W_SetCurrentAmmo,
-        // the next W_WeaponFrame iteration will handle it correctly.
+        // ##Quedra: If an impulse changed the weapon, W_SetCurrentAmmo would have been called.
     }
     
-    if (self.button0) // Player is pressing fire, and cooldown is over.
+    if (self.button0) // ##Quedra: Player is pressing fire, and cooldown is over.
     {
-        // AM_ProcessAttackInputState(); // This logic is now integrated above.
-        
         SuperDamageSound(); 
-        W_Attack();
-        // W_Attack will call the weapon's fire function.
-                    // That function uses AM_CanFireSemiAuto(self.weapon_fire_released).
-                    // If weapon_fire_released is FALSE here, it's because the player
-                    // held the button through the cooldown (handled above), or never released
-                    // after a previous shot.
-                    // If weapon_fire_released is TRUE, it's because the player
-                    // freshly pressed the button *after* the cooldown was over.
+        W_Attack(); // ##Quedra: W_Attack will call the weapon's W_Fire<WeaponName> function.
+                    // ##Quedra: That function uses AM_CanFireSemiAuto() which checks self.weapon_fire_released.
     }
-    else // Player is NOT pressing fire, and cooldown is over.
+    else // ##Quedra: Player is NOT pressing fire, and cooldown is over.
     {
-        AM_WeaponFrame_HandleFireRelease(); // This will correctly set weapon_fire_released = TRUE.
-
-        // Specific logic to stop UMP burst if fire button is released mid-burst.
-        // This should still be here.
-        if (self.weapon == IT_SLOT_PRIMARY && 
-            self.current_weapon_fire_mode == UMP_FIREMODE_IDX_BURST && 
-            self.ump_burst_active) 
+        AM_WeaponFrame_HandleFireRelease(); // ##Quedra: This will correctly set weapon_fire_released = TRUE.
+        
+        // ##Quedra: Generalized burst stop logic if fire button is released (also handles cases where cooldown might have just ended).
+        // ##Quedra: This is a bit redundant if the above block during cooldown already caught it, but ensures state is correct.
+        if (self.burst_active) 
         {
-            self.ump_burst_active = 0; 
-            self.think = SUB_Null;     // Stop the W_FireUMP45_Burst_Think
-            self.nextthink = -1;
-            AM_ResetSustainedRecoil(); // Reset recoil as burst is interrupted
+            self.burst_active = FALSE; 
         }
     }
 };
