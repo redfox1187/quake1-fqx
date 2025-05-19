@@ -264,6 +264,9 @@ float GRAPPLE_ACTION_RETRACT = 2;
 void(float caliber, float bullet_type, float accuracy, float is_tracer) W_am_fire_bullet;
 // ##Quedra: End am_ballistics.qc forward declaration
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 //================================================
 // WEAPON-SPECIFIC MODE SWITCH FUNCTION FORWARD DECLARATIONS
@@ -360,6 +363,7 @@ float GRAPPLE_ACTION_RETRACT = 2;
 .float weapon_fire_released;        
 .float weapon_num_standard_modes;   
 
+<<<<<<< Updated upstream
 
 // In defs.qc, add these to your player entity fields:
 .float  firemode_slot_melee;
@@ -371,6 +375,8 @@ float GRAPPLE_ACTION_RETRACT = 2;
 .float  firemode_slot_aux1;
 .float  firemode_slot_aux2;
 .float  firemode_slot_aux3;
+=======
+>>>>>>> Stashed changes
 
 // Define generic fire mode constants (can be used by any weapon)
 #define FIRE_MODE_PRIMARY   0  // Generic index for a weapon's primary mode
@@ -391,6 +397,36 @@ float UMP_FIREMODE_IDX_DEBUG = 3;  // UMP's debug mode uses index 3
 // RAHP Specific Fire Mode Index Constants (if needed globally, e.g. by W_HasNoAmmo in weapons.qc)
 float RAHP_FIREMODE_IDX_SMALL_LASER = 0;
 =======
+
+// ##Quedra: Player fields for Generic Burst Fire System (ensure these are added)
+.float burst_active;            // ##Quedra: Boolean, TRUE if a burst is currently firing
+.float burst_shots_total;       // ##Quedra: Total shots in the current weapon's defined burst
+.float burst_shots_left;        // ##Quedra: Shots remaining in the currently active burst
+.float burst_rpm;               // ##Quedra: RPM for time between shots *within* the burst
+.float burst_post_cooldown;     // ##Quedra: Cooldown *after* the entire burst is complete
+
+.float burst_caliber;           // ##Quedra: Projectile caliber for burst shots
+.float burst_bullet_type;       // ##Quedra: Projectile bullet type for burst shots
+.float burst_accuracy;          // ##Quedra: Accuracy for burst shots
+
+.float burst_recoil_str;        // ##Quedra: Recoil strength for burst shots
+.float burst_recoil_spr;        // ##Quedra: Recoil spread for burst shots
+.float burst_recoil_vert_bias;  // ##Quedra: Recoil vertical bias for burst shots
+.float burst_recoil_sust_mult;  // ##Quedra: Recoil sustained multiplier for burst shots
+.float burst_recoil_max_sust;   // ##Quedra: Recoil max sustained for burst shots
+
+.string burst_sound_fire;       // ##Quedra: Sound to play for each shot in the burst
+.string burst_empty_sound;      // ##Quedra: Sound to play if ammo runs out mid-burst
+
+//.float burst_anim_frame1;     // ##Quedra: Decided against these for now as player_shot1 is used.
+//.float burst_anim_frame2;     // ##Quedra: If specific anims needed later, W_Fire can set self.weaponframe.
+
+// ##Quedra: Fields for AM_Burst_Think to know current weapon's ammo type and cost for generic ammo check
+.float weapon_ammo_resource_id; // ##Quedra: Set by W_Fire<Weapon> before burst/auto
+.float weapon_ammo_cost_per_shot;// ##Quedra: Set by W_Fire<Weapon> before burst/auto
+// ##Quedra: End Player fields for Generic Burst Fire System
+
+
 
 // ##Quedra: Player fields for Generic Burst Fire System (ensure these are added)
 .float burst_active;            // ##Quedra: Boolean, TRUE if a burst is currently firing

@@ -23,6 +23,9 @@ string AK47_VIEWMODEL           = "progs/v_ak47.mdl";
 // --- Core Identity ---
 string AK47_VIEWMODEL           = "progs/v_ak47.mdl";
 float  AK47_WEAPON_SLOT_IT_FLAG = IT_SLOT_HEAVY; // ##Quedra: Or IT_SLOT_PRIMARY based on your progs.src folder for it
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 float  AK47_AMMO_ID             = AMMO_ID_NAILS;
@@ -162,6 +165,7 @@ void W_FireAk47() {
     {
         self.attack_finished = time + 0.1; 
         return;
+<<<<<<< Updated upstream
     }
 >>>>>>> Stashed changes
 }
@@ -272,6 +276,14 @@ void ak47_fire_debug() {
 
     self.attack_finished = time + AK47_FIRERATE_DEBUG;
 =======
+=======
+    }
+}
+
+void W_SwitchModeAk47() {
+    AM_CycleFireMode(); 
+    sound(self, CHAN_VOICE, AK47_SOUND_SWITCHMODE, 1, ATTN_NORM);
+>>>>>>> Stashed changes
     
     if(self.current_weapon_fire_mode == FIRE_MODE_PRIMARY) { sprint(self, "AK-47: Single Shot\n"); }
     else if(self.current_weapon_fire_mode == FIRE_MODE_SECONDARY) { sprint(self, "AK-47: Full-Auto\n"); }
@@ -280,5 +292,8 @@ void ak47_fire_debug() {
     AM_ResetSustainedRecoil(); 
     self.attack_finished = time;
     self.weapon_fire_released = TRUE;
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 }

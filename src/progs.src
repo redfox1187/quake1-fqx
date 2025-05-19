@@ -75,8 +75,11 @@ client.qc         // ##IDSOFT
 world.qc          // ##IDSOFT 
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 bots/bot.qc				// bot support
 =======
+=======
+>>>>>>> Stashed changes
 maps.qc           // ##FQXCUSTOM - ##Quedra: Assuming this is your custom map logic file.
 doors.qc          // ##IDSOFT
 buttons.qc        // ##IDSOFT
@@ -113,5 +116,9 @@ bots/bot.qc             // ##IDSOFT
 
 //=============================================================================
 // ##Quedra: End of progs.src
+<<<<<<< Updated upstream
+//=============================================================================
+>>>>>>> Stashed changes
+=======
 //=============================================================================
 >>>>>>> Stashed changes

@@ -36,6 +36,9 @@ float  UMP45_MAG_CAPACITY       = 25;
 float  UMP45_RELOAD_TIME_SEC    = 3.0;
 float  UMP45_RELOAD_TYPE        = RELOAD_TYPE_MAGAZINE_REPLACE;
 float  UMP45_RELOAD_COST_TOTAL  = 20;
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 
 ==============================================================================
@@ -247,6 +250,56 @@ void W_FireUMP45()
     if (self.current_weapon_fire_mode == FIRE_MODE_PRIMARY) 
     {
         if (!AM_CanFireSemiAuto()) { return; }
+<<<<<<< Updated upstream
+=======
+    }
+    else if (self.current_weapon_fire_mode == FIRE_MODE_SECONDARY) 
+    {
+        if (self.burst_active) { return; }
+        if (!AM_CanFireSemiAuto()) { return; } 
+    }
+
+    if (AM_GetAmmoCount(self.weapon_ammo_resource_id) < self.weapon_ammo_cost_per_shot)
+    {
+        sound(self, CHAN_AUTO, UMP45_SOUND_EMPTY, 1, ATTN_NORM);
+        self.attack_finished = time + 0.5;
+        self.weapon_fire_released = TRUE;
+        return;
+    }
+
+    self.weapon_fire_released = FALSE;
+
+    if (self.current_weapon_fire_mode == FIRE_MODE_PRIMARY) 
+    {
+        AM_ExecuteStandardFire_Parameterized(UMP45_CALIBER, UMP45_BULLET_TYPE, UMP45_BASE_ACCURACY_SINGLE, FALSE,
+                                           UMP45_RECOIL_S_STR, UMP45_RECOIL_S_SPR, UMP45_RECOIL_S_VERT_BIAS, UMP45_RECOIL_S_SUST_MULT, UMP45_RECOIL_S_MAX_SUST,
+                                           UMP45_SOUND_FIRE_PRIMARY, UMP45_CYCLIC_RPM);
+    }
+    else if (self.current_weapon_fire_mode == FIRE_MODE_SECONDARY) 
+    {
+        AM_StartBurstFire_Parameterized(UMP45_BURST_SHOT_COUNT, UMP45_BURST_INNER_RPM, UMP45_BURST_POST_DELAY,
+                                        UMP45_CALIBER, UMP45_BULLET_TYPE, UMP45_BASE_ACCURACY_BURST,
+                                        UMP45_RECOIL_B_STR, UMP45_RECOIL_B_SPR, UMP45_RECOIL_B_VERT_BIAS,
+                                        UMP45_RECOIL_B_SUST_MULT, UMP45_RECOIL_B_MAX_SUST,
+                                        UMP45_SOUND_FIRE_PRIMARY, UMP45_SOUND_FIRE_BURST, UMP45_SOUND_EMPTY);
+    }
+    else if (self.current_weapon_fire_mode == FIRE_MODE_TERTIARY) // Full-Auto
+    {
+        AM_ExecuteStandardFire_Parameterized(UMP45_CALIBER, UMP45_BULLET_TYPE, UMP45_BASE_ACCURACY_AUTO, FALSE,
+                                           UMP45_RECOIL_A_STR, UMP45_RECOIL_A_SPR, UMP45_RECOIL_A_VERT_BIAS, UMP45_RECOIL_A_SUST_MULT, UMP45_RECOIL_A_MAX_SUST,
+                                           UMP45_SOUND_FIRE_PRIMARY, UMP45_CYCLIC_RPM);
+    }
+    else if (self.current_weapon_fire_mode == self.weapon_num_standard_modes && cvar("developer") > 0) 
+    {
+        AM_ExecuteStandardFire_Parameterized(UMP45_CALIBER, UMP45_BULLET_TYPE, 100, TRUE, 
+                                           UMP45_RECOIL_D_STR, UMP45_RECOIL_D_SPR, UMP45_RECOIL_D_VERT_BIAS, UMP45_RECOIL_D_SUST_MULT, UMP45_RECOIL_D_MAX_SUST,
+                                           UMP45_SOUND_FIRE_PRIMARY, UMP45_CYCLIC_RPM);
+    }
+    else
+    {
+        self.attack_finished = time + 0.1; 
+        return;
+>>>>>>> Stashed changes
     }
     else if (self.current_weapon_fire_mode == FIRE_MODE_SECONDARY) 
     {
@@ -571,6 +624,14 @@ void w_ump45_SetCurrentAmmo() {
     self.attack_finished = time;
 }
 
+void w_ump45_SetCurrentAmmo() {
+    AM_InitializeWeaponView(UMP45_VIEWMODEL, UMP45_AMMO_RESOURCE_ID, UMP45_WEAPON_SLOT_IT_FLAG);
+    AM_InitWeaponFireModes(UMP45_NUM_STANDARD_MODES); 
+    AM_SetRecoilPattern(UMP45_RECOIL_PATTERN, UMP45_RECOIL_RECOVERY_RATE);
+    self.burst_active = FALSE;
+    self.attack_finished = time;
+}
+
 void W_SwitchModeUMP45() {
     AM_CycleFireMode(); 
     sound(self, CHAN_VOICE, UMP45_SOUND_SWITCHMODE, 1, ATTN_NORM);
@@ -585,5 +646,9 @@ void W_SwitchModeUMP45() {
     AM_ResetSustainedRecoil();
     self.attack_finished = time;
     self.weapon_fire_released = TRUE;
+<<<<<<< Updated upstream
+}
+>>>>>>> Stashed changes
+=======
 }
 >>>>>>> Stashed changes

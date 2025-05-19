@@ -22,6 +22,9 @@ string M93R_SOUND_EMPTY         = "weapons/boltback.wav";
 //============================================================================
 
 // --- Core Identity ---
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 string M93R_VIEWMODEL           = "progs/v_rahpm1.mdl";
 
@@ -472,5 +475,8 @@ void W_SwitchModeM93R()
     AM_ResetSustainedRecoil(); 
     self.attack_finished = time; 
     self.weapon_fire_released = TRUE; 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 }
