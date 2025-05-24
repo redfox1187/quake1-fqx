@@ -84,9 +84,22 @@ plats.qc          // ##IDSOFT
 misc.qc           // ##IDSOFT 
 
 //=============================================================================
-// ##Quedra: PART 8 - MONSTER DEFINITIONS
+// ##Quedra: PART 8 - MONSTER CORE (MC_*) MODULES
 //=============================================================================
-monsters.qc       // ##IDSOFT 
+
+monsters.qc       // ##IDSOFT - #Fox: moved here until it is completely phased out.
+monsters/monster_core/mc_defs.qc
+monsters/monster_core/mc_ops_states.qc
+monsters/monster_core/mc_ops_perception.qc
+monsters/monster_core/mc_ops_movement.qc
+monsters/monster_core/mc_ops_combat.qc
+monsters/monster_core/mc_mon_weapons.qc 
+monsters/monster_core/mc_bh_ai.qc 
+
+//=============================================================================
+// ##Quedra: PART 9 - MONSTER DEFINITIONS
+//=============================================================================
+
 // --- Individual Monster Types ---
 monsters/ogre.qc        // ##IDSOFT
 monsters/fiend.qc       // ##IDSOFT

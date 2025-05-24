@@ -52,7 +52,7 @@ void() W_Precache =
 	precache_sound ("weapons/usp-suppressed-1.wav");
 
 		precache_model ("progs/bit.mdl");	// model to use for shotgun pellet
-		precache_model ("progs/v_dbshot.mdl");	// Double Barrel Shotgun view model
+		precache_model ("progs/v_doublebarrel.mdl");	// Double Barrel Shotgun view model
 
 		precache_model ("progs/bullet.mdl"); // Small model for bullet
 		precache_model ("progs/v_ump45.mdl");	// UMP45 view model
