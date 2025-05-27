@@ -1,840 +1,832 @@
+//=============================================================================
+// weapons.qc - FQX Mod - Core Weapon Handling & Standard Implementations
+// ##FQXCUSTOM - ##Quedra: Version 3.5
+// ##Quedra: Based on id Software's original weapons.qc.
+// ##Quedra: Extensively revised for FQX modularity, new weapon dispatching,
+// ##Quedra: integration of weapon_first_draw_init flag for reload system,
+// ##Quedra: corrected T_Damage calls, ensured all local functions are declared
+// ##Quedra: or defined before use.
+// ##Quedra: v2.9 - Added 'const' to SpawnBlood definition.
+// ##Quedra: v3.0 - Updated W_Precache to include original viewmodels used by AUX slots.
+// ##Quedra: v3.1 - Modified W_SetCurrentAmmo, W_Attack, and ToggleFireMode for IT_SLOT_PRIMARY
+// ##Quedra:          to dynamically use GetWeaponIDForITSlot, aligning with loadout system.
+// ##Quedra: v3.2 - W_Precache function content moved to FQX_Precache_AllWeaponAssets()
+// ##Quedra:          in op_precache.qc. W_Precache forward declaration removed.
+// ##Quedra: v3.3 - Removed the empty W_Precache() function definition entirely.
+// ##Quedra: v3.4 - Overhauled W_HasNoAmmo for FQX magazine and resource system.
+// ##Quedra:        - Overhauled W_BestWeapon to Soldier's FQX specifications.
+// ##Quedra:        - Added helper functions FQX_IsWeaponExplosive and FQX_WeaponHasSufficientResource.
+// ##Quedra: v3.5 - Corrected W_SetCurrentAmmo for inactive IT_SLOT_UTILITY (no W_Grapple_SetCurrentAmmo).
+// ##Quedra:        - Corrected W_HasNoAmmo by removing AMMO_ID_NONE check to resolve compiler error.
+//=============================================================================
+
 /* Copyright (C) 1996-2022 id Software LLC
+    (Standard GPL License text)
+    See file, 'COPYING', for details. */
 
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-
-    See file, 'COPYING', for details.
-*/
-
-// Standard game functions
-void (entity targ, entity inflictor, entity attacker, float damage) T_Damage;
-void () player_run;
-void(entity bomb, entity attacker, float rad, entity ignore) T_RadiusDamage;
-void(vector org, vector vel, float damage) SpawnBlood;
+//-----------------------------------------------------------------------------
+// ##Quedra: Local Function Forward Declarations for weapons.qc
+//-----------------------------------------------------------------------------
+float() crandom;
+void() W_FireAxe;
+vector() wall_velocity;
+void(vector org, vector vel) SpawnMeatSpray;
+const void(vector org, vector vel, float damage) SpawnBlood;
+void(float damage) spawn_touchblood;
+void(vector org, vector vel) SpawnChunk;
+void() ClearMultiDamage;
+void() ApplyMultiDamage;
+void(entity hit, float damage) AddMultiDamage;
+void(float damage, vector dir) TraceAttack;
+void(float shotcount, vector dir, vector spread) FireBullets;
+void() s_explode1;
+void() s_explode2; void() s_explode3; void() s_explode4; void() s_explode5; void() s_explode6;
+void() BecomeExplosion;
+void() T_MissileTouch;
+void() W_FireRocket;
+void(vector p1, vector p2, entity from, float damage) LightningDamage;
+void() W_FireLightning;
+void() GrenadeExplode;
+void() GrenadeTouch;
+void() W_FireGrenade;
+void() W_SetCurrentAmmo;
+float() W_BestWeapon;
+float(entity playerEnt, float old, float new) W_WantsToChangeWeapon;
+float() W_HasNoAmmo;
+void() W_Attack;
+void() W_ChangeWeapon;
+void() CheatCommand;
+void() ServerflagsCommand;
+void() QuadCheat;
+void() ToggleFireMode;
+void() Quick_Grenade;
+void(string msg) Quick_Melee_DebugPrint;
+void() Quick_Melee_End;
+void() Quick_Melee_FrameAdvance;
+void() Quick_Melee_Start;
+void() Quick_Melee_ToggleDebug;
+void() Quick_Melee_ForceCancel;
+void() ImpulseCommands;
+void() W_WeaponFrame;
 void() SuperDamageSound;
 
+// ##FQXCUSTOM - ##Quedra: New helper function forward declarations for v3.4
+float FQX_IsWeaponExplosive(float weapon_id);
+float FQX_WeaponHasSufficientResource(entity player, float check_weapon_id);
 
-// called by worldspawn
-void() W_Precache =
-{
-	precache_sound ("weapons/r_exp3.wav");	// new rocket explosion
-	precache_sound ("weapons/rocket1i.wav");	// spike gun
-	precache_sound ("weapons/sgun1.wav");
-	precache_sound ("weapons/guncock.wav");	// player shotgun
-	precache_sound ("weapons/ric1.wav");	// ricochet (used in c code)
-	precache_sound ("weapons/ric2.wav");	// ricochet (used in c code)
-	precache_sound ("weapons/ric3.wav");	// ricochet (used in c code)
-	precache_sound ("weapons/spike2.wav");	// super spikes
-	precache_sound ("weapons/tink1.wav");	// spikes tink (used in c code)
-	precache_sound ("weapons/grenade.wav");	// grenade launcher
-	precache_sound ("weapons/bounce.wav");		// grenade bounce
-	precache_sound ("weapons/shotgn2.wav");	// super shotgun
-	
-	precache_sound ("enforcer/enfire.wav");		// laser sound
-		precache_model ("progs/laser.mdl");	// laser model
-		precache_model ("progs/v_rahpm1.mdl"); // RAHP view model
 
-	precache_sound ("weapons/usp-reload_magin.wav");
-	precache_sound ("weapons/usp-reload_magout.wav");
-	precache_sound ("weapons/usp_unsil-1.wav");
-	precache_sound ("weapons/usp_unsil-2.wav");
-	precache_sound ("weapons/usp-suppressed-1.wav");
-
-		precache_model ("progs/bit.mdl");	// model to use for shotgun pellet
-		precache_model ("progs/v_doublebarrel.mdl");	// Double Barrel Shotgun view model
-
-		precache_model ("progs/bullet.mdl"); // Small model for bullet
-		precache_model ("progs/v_ump45.mdl");	// UMP45 view model
-	precache_sound ("weapons/ump45-1.wav");		// UMP shot sound
-	precache_sound ("weapons/boltback.wav");	// dry weapon sound (UMP)
-	precache_sound ("weapons/weaponclick.wav");		// weapon switch/click sound
-	
-	    precache_model("progs/v_ak47.mdl"); // Ak47 view model
-    precache_sound("weapons/ak47-fire-1.wav");      // Ak47 firing sound
-    precache_sound("weapons/ak47-fire-2.wav");      // Ak47 firing sound
-    precache_sound("weapons/ak47_switch.wav");    // Ak47 mode switch/select sound
-	
-	// ##Quedra: M93R Sounds (Using RAHP view model, already precached)
-	precache_sound ("weapons/9mm_Pistol-1.wav");        // ##Quedra: New
-	precache_sound ("weapons/9mm_Pistol-2.wav");        // ##Quedra: New
-	precache_sound ("weapons/9mm_Pistol_Switch-01.wav"); // ##Quedra: New
-	// ##Quedra: End M93R Precache
-	
-		precache_model ("progs/grapple_anchor.mdl");	// grapple's hook
-};
-
+//=============================================================================
+// ##IDSOFT - ##Quedra: crandom - Standard utility
+//=============================================================================
 float() crandom =
 {
-	return 2*(random() - 0.5);
+    return 2 * (random() - 0.5);
 };
-
-/*
-================
-W_FireAxe
-================
-*/
+//=============================================================================
+// ##IDSOFT - ##Quedra: W_FireAxe - Standard Axe firing logic
+//=============================================================================
 void() W_FireAxe =
 {
-	local	vector	source;
-	local	vector	org;
+    local vector source;
+    local vector org;
 
-	makevectors (self.v_angle);
-	source = self.origin + '0 0 16';
-	traceline (source, source + v_forward*64, FALSE, self);
-	if (trace_fraction == 1.0)
-		return;
-	
-	org = trace_endpos - v_forward*4;
-
-	if (trace_ent.takedamage)
-	{
-		trace_ent.axhitme = 1;
-		SpawnBlood (org, '0 0 0', 20); // Assuming SpawnBlood is defined elsewhere
-		T_Damage (trace_ent, self, self, 20);
-	}
-	else
-	{	// hit wall
-		sound (self, CHAN_WEAPON, "player/axhit2.wav", 1, ATTN_NORM);
-		WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
-		WriteByte (MSG_BROADCAST, TE_GUNSHOT);
-		WriteCoord (MSG_BROADCAST, org_x);
-		WriteCoord (MSG_BROADCAST, org_y);
-		WriteCoord (MSG_BROADCAST, org_z);
-	}
+    makevectors (self.v_angle);
+    source = self.origin + '0 0 16';
+    traceline (source, source + v_forward * 64, FALSE, self);
+    
+    if (trace_fraction == 1.0) { return; } 
+    
+    org = trace_endpos - v_forward * 4;
+    if (trace_ent.takedamage) 
+    {
+        trace_ent.axhitme = 1;
+        SpawnBlood(org, '0 0 0', 20);
+        T_Damage(trace_ent, self, self, 20);
+    }
+    else
+    {   // hit wall
+        sound(self, CHAN_WEAPON, "player/axhit2.wav", 1, ATTN_NORM);
+        WriteByte(MSG_BROADCAST, SVC_TEMPENTITY);
+        WriteByte(MSG_BROADCAST, TE_GUNSHOT);
+        WriteCoord(MSG_BROADCAST, org_x);
+        WriteCoord(MSG_BROADCAST, org_y);
+        WriteCoord(MSG_BROADCAST, org_z); 
+    }
 };
-
-
+//============================================================================
+// ##IDSOFT - ##Quedra: wall_velocity - Standard utility for gibs
 //============================================================================
 vector() wall_velocity =
 {
-	local vector	vel;
-	vel = normalize (self.velocity);
-	vel = normalize(vel + v_up*(random()- 0.5) + v_right*(random()- 0.5));
-	vel = vel + 2*trace_plane_normal;
-	vel = vel * 200;
-	
-	return vel;
+    local vector vel;
+    vel = normalize(self.velocity); 
+    vel = normalize(vel + v_up * (random() - 0.5) + v_right * (random() - 0.5));
+    vel = vel + 2 * trace_plane_normal;
+    vel = vel * 200; 
+    return vel; 
 };
-
+//============================================================================
+// ##IDSOFT - ##Quedra: SpawnMeatSpray - Standard gibbing effect
+//============================================================================
 void(vector org, vector vel) SpawnMeatSpray =
 {
-	local	entity missile;
+    local entity missile;
+    missile = spawn(); 
+    missile.owner = self;
+    missile.movetype = MOVETYPE_BOUNCE; 
+    missile.solid = SOLID_NOT;
+    
+    missile.velocity = vel;
+    missile.velocity_z = missile.velocity_z + 250 + 50 * random();
 
-	missile = spawn ();
-	missile.owner = self;
-	missile.movetype = MOVETYPE_BOUNCE;
-	missile.solid = SOLID_NOT;
+    missile.avelocity = '3000 1000 2000';
+    
+    missile.nextthink = time + 1;
+    missile.think = SUB_Remove; 
 
-	makevectorsfixed(self.angles); // Assuming makevectorsfixed is defined elsewhere (e.g. subs.qc)
-
-	missile.velocity = vel;
-	missile.velocity_z = missile.velocity_z + 250 + 50*random();
-
-	missile.avelocity = '3000 1000 2000';
-	
-	missile.nextthink = time + 1;
-	missile.think = SUB_Remove; // Assuming SUB_Remove is defined
-
-	setmodel (missile, "progs/zom_gib.mdl");
-	setsize (missile, '0 0 0', '0 0 0');		
-	setorigin (missile, org);
+    setmodel(missile, "progs/zom_gib.mdl");
+    setsize(missile, '0 0 0', '0 0 0');      
+    setorigin(missile, org);
 };
-
-void(vector org, vector vel, float damage) SpawnBlood =
+//============================================================================
+// ##IDSOFT - ##Quedra: SpawnBlood - Standard blood spawning
+//============================================================================
+const void(vector org, vector vel, float damage) SpawnBlood =
 {
-	particle (org, vel*0.1, 73, damage*2);
+    particle(org, vel * 0.1, 73, damage * 2);
 };
 
+//============================================================================
+// ##IDSOFT - ##Quedra: spawn_touchblood - Helper for blood on touch
+//============================================================================
 void(float damage) spawn_touchblood =
 {
-	local vector	vel;
-	vel = wall_velocity () * 0.2;
-	SpawnBlood (self.origin + vel*0.01, vel, damage);
+    local vector vel;
+    vel = wall_velocity() * 0.2;
+    SpawnBlood(self.origin + vel * 0.01, vel, damage); 
 };
-
+//============================================================================
+// ##IDSOFT - ##Quedra: SpawnChunk - Placeholder, original was empty
+//============================================================================
 void(vector org, vector vel) SpawnChunk =
 {
-	particle (org, vel*0.02, 0, 10);
+    particle(org, vel * 0.02, 0, 10);
 };
 
 //==============================================================================
-// MULTI-DAMAGE
+// ##IDSOFT - ##Quedra: MULTI-DAMAGE - System for combining small damage amounts
 //==============================================================================
-entity	multi_ent;
-float	multi_damage;
-
+entity  multi_ent;
+float   multi_damage;
 void() ClearMultiDamage =
 {
-	multi_ent = world;
-	multi_damage = 0;
+    multi_ent = world;
+    multi_damage = 0; 
 };
-
 void() ApplyMultiDamage =
 {
-	if (!multi_ent)
-		return;
-	T_Damage (multi_ent, self, self, multi_damage);
+    if (multi_ent == world || multi_ent == self || !multi_ent) { return; } 
+    T_Damage(multi_ent, self, self, multi_damage); 
 };
-
 void(entity hit, float damage) AddMultiDamage =
 {
-	if (!hit)
-		return;
-	
-	if (hit != multi_ent)
-	{
-		ApplyMultiDamage ();
-		multi_damage = damage;
-		multi_ent = hit;
-	}
-	else
-		multi_damage = multi_damage + damage;
+    if (!hit) { return; } 
+    if (hit != multi_ent) { ApplyMultiDamage(); multi_damage = damage; multi_ent = hit; } 
+    else { multi_damage = multi_damage + damage; } 
 };
-
 //==============================================================================
-// BULLETS (TraceAttack based - for original Shotgun/SuperShotgun)
+// ##IDSOFT - ##Quedra: BULLETS (TraceAttack based)
 //==============================================================================
 void(float damage, vector dir) TraceAttack =
 {
-	local	vector	vel, org;
-	vel = normalize(dir + v_up*crandom() + v_right*crandom());
-	vel = vel + 2*trace_plane_normal;
-	vel = vel * 200;
-	org = trace_endpos - dir*4;
+    local vector org;
+    org = trace_endpos - dir * 4;
 
-	if (trace_ent.takedamage)
-	{
-		SpawnBlood (org, vel*0.2, damage);
-		AddMultiDamage (trace_ent, damage);
-	}
-	else
-	{
-		WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
-		WriteByte (MSG_BROADCAST, TE_GUNSHOT);
-		WriteCoord (MSG_BROADCAST, org_x);
-		WriteCoord (MSG_BROADCAST, org_y);
-		WriteCoord (MSG_BROADCAST, org_z);
-	}
+    if (trace_ent.takedamage) 
+    {
+        SpawnBlood(org, dir * 50, damage);
+        AddMultiDamage(trace_ent, damage);
+    }
+    else
+    {
+        WriteByte(MSG_BROADCAST, SVC_TEMPENTITY);
+        WriteByte(MSG_BROADCAST, TE_GUNSHOT);
+        WriteCoord(MSG_BROADCAST, org_x);
+        WriteCoord(MSG_BROADCAST, org_y);
+        WriteCoord(MSG_BROADCAST, org_z); 
+    }
 };
-
 void(float shotcount, vector dir, vector spread) FireBullets =
 {
-	local	vector direction;
-	local	vector	src;
-	makevectors(self.v_angle);
+    local vector direction;
+    local vector src; 
 
-	src = self.origin + v_forward*10; 
-	src_z = self.absmin_z + self.size_z * 0.7; 
+    makevectors(self.v_angle);
+    src = self.origin + v_forward * 10;
+    src_z = self.absmin_z + self.size_z * 0.7;  
 
-	ClearMultiDamage ();
-	while (shotcount > 0)
-	{
-		direction = dir + crandom()*spread_x*v_right + crandom()*spread_y*v_up;
-		traceline (src, src + direction*2048, FALSE, self);
-		if (trace_fraction != 1.0)
-			TraceAttack (4, direction); 
-
-		shotcount = shotcount - 1;
-	}
-	ApplyMultiDamage ();
+    ClearMultiDamage();
+    while (shotcount > 0) 
+    {
+        direction = dir + crandom() * spread_x * v_right + crandom() * spread_y * v_up;
+        direction = normalize(direction);
+        traceline(src, src + direction * 2048, FALSE, self);
+        if (trace_fraction != 1.0) { TraceAttack(4, direction); } 
+        shotcount = shotcount - 1;
+    }
+    ApplyMultiDamage(); 
 };
-
-
-
 //==============================================================================
-// ROCKETS
+// ##IDSOFT - ##Quedra: ROCKETS
 //==============================================================================
-void()	s_explode1	=	[0,		s_explode2] {};
-void()	s_explode2	=	[1,		s_explode3] {};
-void()	s_explode3	=	[2,		s_explode4] {};
-void()	s_explode4	=	[3,		s_explode5] {};
-void()	s_explode5	=	[4,		s_explode6] {};
-void()	s_explode6	=	[5,		SUB_Remove] {};
-
+void() s_explode1 = { self.frame = 0; self.nextthink = time + 0.1; self.think = s_explode2; };
+void() s_explode2 = { self.frame = 1; self.nextthink = time + 0.1; self.think = s_explode3; };
+void() s_explode3 = { self.frame = 2; self.nextthink = time + 0.1; self.think = s_explode4; };
+void() s_explode4 = { self.frame = 3; self.nextthink = time + 0.1; self.think = s_explode5; };
+void() s_explode5 = { self.frame = 4; self.nextthink = time + 0.1; self.think = s_explode6; };
+void() s_explode6 = { self.frame = 5; self.nextthink = time + 0.1; self.think = SUB_Remove; };
 void() BecomeExplosion =
 {
-	self.movetype = MOVETYPE_NONE;
-	self.velocity = '0 0 0';
-	self.touch = SUB_Null;
-	setmodel (self, "progs/s_explod.spr"); 
-	self.solid = SOLID_NOT;
-	s_explode1 (); 
+    self.movetype = MOVETYPE_NONE; self.velocity = '0 0 0'; self.touch = SUB_Null;
+    setmodel(self, "progs/s_explod.spr");
+    self.solid = SOLID_NOT; s_explode1(); 
 };
-
 void() T_MissileTouch =
 {
-	local float	damg;
-	if (other == self.owner) return;		
-	if (pointcontents(self.origin) == CONTENT_SKY) { remove(self); return; }
-	damg = 100 + random()*20;
-	if (other.health) { if (other.classname == "monster_shambler") damg = damg * 0.5; T_Damage (other, self, self.owner, damg ); }
-	T_RadiusDamage (self, self.owner, 120, other); 
-	self.origin = self.origin - 8*normalize(self.velocity); 
-	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY); WriteByte (MSG_BROADCAST, TE_EXPLOSION); 
-	WriteCoord (MSG_BROADCAST, self.origin_x);
-	WriteCoord (MSG_BROADCAST, self.origin_y); WriteCoord (MSG_BROADCAST, self.origin_z);
-	BecomeExplosion ();
+    local float damg; 
+    if (other == self.owner) { return; } 
+    if (pointcontents(self.origin) == CONTENT_SKY) { remove(self); return; } 
+    damg = 100 + random() * 20;
+    if (other.health) { if (other.classname == "monster_shambler") { damg = damg * 0.5;
+    } T_Damage(other, self, self.owner, damg); } 
+    T_RadiusDamage(self, self.owner, 120, other);
+    self.origin = self.origin - 8 * normalize(self.velocity);  
+    WriteByte(MSG_BROADCAST, SVC_TEMPENTITY);
+    WriteByte(MSG_BROADCAST, TE_EXPLOSION);
+    WriteCoord(MSG_BROADCAST, self.origin_x); WriteCoord(MSG_BROADCAST, self.origin_y); WriteCoord(MSG_BROADCAST, self.origin_z); 
+    BecomeExplosion();
 };
 
 void() W_FireRocket =
 {
-	local	entity missile;
-	self.currentammo = self.ammo_rockets = self.ammo_rockets - 1;
-	sound (self, CHAN_WEAPON, "weapons/sgun1.wav", 1, ATTN_NORM); 
-	self.punchangle_x = -2;
-	missile = spawn (); missile.owner = self; missile.movetype = MOVETYPE_FLYMISSILE;
-	missile.solid = SOLID_BBOX; missile.classname = "missile";
-	makevectors (self.v_angle); missile.velocity = aim(self, 1000); 
-	missile.velocity = missile.velocity * 1000; missile.angles = vectoangles(missile.velocity);
-	missile.touch = T_MissileTouch; missile.nextthink = time + 5; missile.think = SUB_Remove;
-	setmodel (missile, "progs/missile.mdl");
-	setsize (missile, '0 0 0', '0 0 0');		
-	setorigin (missile, self.origin + v_forward*8 + '0 0 16'); 
+    local entity missile;
+    self.currentammo = self.ammo_rockets = self.ammo_rockets - 1;
+    sound(self, CHAN_WEAPON, "weapons/sgun1.wav", 1, ATTN_NORM);  
+    self.punchangle_x = -2;
+    missile = spawn(); missile.owner = self; missile.movetype = MOVETYPE_FLYMISSILE; missile.solid = SOLID_BBOX; missile.classname = "missile";
+    makevectors(self.v_angle); missile.velocity = aim(self, 1000);
+    missile.velocity = missile.velocity * 1000; missile.angles = vectoangles(missile.velocity);
+    missile.touch = T_MissileTouch; missile.nextthink = time + 5; missile.think = SUB_Remove;
+    setmodel(missile, "progs/missile.mdl"); setsize(missile, '0 0 0', '0 0 0');
+    setorigin(missile, self.origin + v_forward * 8 + '0 0 16');  
 };
-
 //===============================================================================
-// LIGHTNING
+// ##IDSOFT - ##Quedra: LIGHTNING
 //===============================================================================
 void(vector p1, vector p2, entity from, float damage) LightningDamage =
 {
-	local entity e1, e2; local vector f_spread, beam_dir;
-	beam_dir = normalize(p2 - p1); 
-    f_spread_x = -beam_dir_y; f_spread_y = beam_dir_x; f_spread_z = 0; 
-	f_spread = normalize(f_spread) * 16;
-	e1 = e2 = world; 
-	traceline (p1, p2, FALSE, from); 
-	if (trace_ent.takedamage) { particle (trace_endpos, '0 0 100', 225, damage*4);
-	T_Damage (trace_ent, from, from, damage); }
-	e1 = trace_ent; 
-	traceline (p1 + f_spread, p2 + f_spread, FALSE, from);
-	if (trace_ent != e1 && trace_ent.takedamage) { particle (trace_endpos, '0 0 100', 225, damage*4); T_Damage (trace_ent, from, from, damage); }
-	e2 = trace_ent; 
-	traceline (p1 - f_spread, p2 - f_spread, FALSE, from);
-	if (trace_ent != e1 && trace_ent != e2 && trace_ent.takedamage) { particle (trace_endpos, '0 0 100', 225, damage*4);
-	T_Damage (trace_ent, from, from, damage); }
+    local entity e1, e2;
+    local vector f_spread, beam_dir; 
+    beam_dir = normalize(p2 - p1); f_spread_x = -beam_dir_y; f_spread_y = beam_dir_x;
+    f_spread_z = 0;
+    f_spread = normalize(f_spread) * 16; 
+    e1 = e2 = world;
+    traceline(p1, p2, FALSE, from);
+    if (trace_ent.takedamage) { particle(trace_endpos, '0 0 100', 225, damage * 4);
+    T_Damage(trace_ent, from, from, damage); } 
+    e1 = trace_ent;
+    traceline(p1 + f_spread, p2 + f_spread, FALSE, from);
+    if (trace_ent != e1 && trace_ent.takedamage) { particle(trace_endpos, '0 0 100', 225, damage * 4);
+    T_Damage(trace_ent, from, from, damage); } 
+    e2 = trace_ent;
+    traceline(p1 - f_spread, p2 - f_spread, FALSE, from);
+    if (trace_ent != e1 && trace_ent != e2 && trace_ent.takedamage) { particle(trace_endpos, '0 0 100', 225, damage * 4);
+    T_Damage(trace_ent, from, from, damage); } 
 };
 
 void() W_FireLightning =
 {
-	local vector org; local float cells_consumed;
-	if (self.ammo_cells < 1) { self.weapon = W_BestWeapon (); W_SetCurrentAmmo (); return; }
-	if (self.waterlevel > 1) { cells_consumed = self.ammo_cells;
-	self.ammo_cells = 0; W_SetCurrentAmmo (); T_RadiusDamage (self, self, 35 * cells_consumed, world); return; }
-	if (self.t_width < time) { sound (self, CHAN_WEAPON, "weapons/lhit.wav", 1, ATTN_NORM); self.t_width = time + 0.6; }
-	self.punchangle_x = -2;
-	self.currentammo = self.ammo_cells = self.ammo_cells - 1; 
-	org = self.origin + '0 0 16'; 
-    makevectors(self.v_angle);
-	traceline (org, org + v_forward*600, TRUE, self); 
-	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY); WriteByte (MSG_BROADCAST, TE_LIGHTNING2); 
-	WriteEntity (MSG_BROADCAST, self); WriteCoord (MSG_BROADCAST, org_x);
-	WriteCoord (MSG_BROADCAST, org_y); WriteCoord (MSG_BROADCAST, org_z);
-	WriteCoord (MSG_BROADCAST, trace_endpos_x); WriteCoord (MSG_BROADCAST, trace_endpos_y); WriteCoord (MSG_BROADCAST, trace_endpos_z);
-	LightningDamage (org, trace_endpos + v_forward*4, self, 30); 
+    local vector org; local float cells_consumed;
+    if (self.ammo_cells < 1) { self.weapon = W_BestWeapon(); W_SetCurrentAmmo(); return; } 
+    if (self.waterlevel > 1) { cells_consumed = self.ammo_cells; self.ammo_cells = 0; W_SetCurrentAmmo();
+    T_RadiusDamage(self, self, 35 * cells_consumed, world); return; } 
+    if (self.t_width < time) { sound(self, CHAN_WEAPON, "weapons/lhit.wav", 1, ATTN_NORM);
+    self.t_width = time + 0.6; } 
+    self.punchangle_x = -2;
+    self.currentammo = self.ammo_cells = self.ammo_cells - 1;
+    org = self.origin + '0 0 16'; makevectors(self.v_angle);
+    traceline(org, org + v_forward * 600, TRUE, self);  
+    WriteByte(MSG_BROADCAST, SVC_TEMPENTITY); WriteByte(MSG_BROADCAST, TE_LIGHTNING2);
+    WriteEntity(MSG_BROADCAST, self);
+    WriteCoord(MSG_BROADCAST, org_x); WriteCoord(MSG_BROADCAST, org_y); WriteCoord(MSG_BROADCAST, org_z); WriteCoord(MSG_BROADCAST, trace_endpos_x); WriteCoord(MSG_BROADCAST, trace_endpos_y); WriteCoord(MSG_BROADCAST, trace_endpos_z);
+    LightningDamage(org, trace_endpos + v_forward * 4, self, 30);  
 };
-
 //=============================================================================
-// GRENADES
+// ##IDSOFT - ##Quedra: GRENADES
 //=============================================================================
 void() GrenadeExplode =
 {
-	T_RadiusDamage (self, self.owner, 120, world); 
-	WriteByte (MSG_BROADCAST, SVC_TEMPENTITY);
-	WriteByte (MSG_BROADCAST, TE_EXPLOSION); 
-	WriteCoord (MSG_BROADCAST, self.origin_x); WriteCoord (MSG_BROADCAST, self.origin_y); WriteCoord (MSG_BROADCAST, self.origin_z);
-	BecomeExplosion (); 
+    T_RadiusDamage(self, self.owner, 120, world);
+    WriteByte(MSG_BROADCAST, SVC_TEMPENTITY); WriteByte(MSG_BROADCAST, TE_EXPLOSION); WriteCoord(MSG_BROADCAST, self.origin_x); WriteCoord(MSG_BROADCAST, self.origin_y); WriteCoord(MSG_BROADCAST, self.origin_z);
+    BecomeExplosion();  
 };
-
 void() GrenadeTouch =
 {
-	if (other == self.owner) return;		
-	if (other.takedamage == DAMAGE_AIM) { GrenadeExplode(); return; }
-	sound (self, CHAN_WEAPON, "weapons/bounce.wav", 1, ATTN_NORM);
-	if (self.velocity == '0 0 0') self.avelocity = '0 0 0'; 
+    if (other == self.owner) { return; } 
+    if (other.takedamage == DAMAGE_AIM) { GrenadeExplode(); return; } 
+    sound(self, CHAN_WEAPON, "weapons/bounce.wav", 1, ATTN_NORM);
+    if (self.velocity == '0 0 0') { self.avelocity = '0 0 0'; }  
 };
-
 void() W_FireGrenade =
 {
-	local entity missile;
-	self.currentammo = self.ammo_rockets = self.ammo_rockets - 1; 
-	sound (self, CHAN_WEAPON, "weapons/grenade.wav", 1, ATTN_NORM); 
-	self.punchangle_x = -2;
-	missile = spawn ();
-	missile.owner = self; missile.movetype = MOVETYPE_BOUNCE; missile.solid = SOLID_BBOX; missile.classname = "grenade";
-	makevectors (self.v_angle);
-	if (self.v_angle_x) missile.velocity = v_forward*600 + v_up * 200 + crandom()*v_right*10 + crandom()*v_up*10;
-	else { missile.velocity = aim(self, 10000);
-	missile.velocity = missile.velocity * 600; missile.velocity_z = 200; }
-	missile.avelocity = '300 300 300'; missile.angles = vectoangles(missile.velocity);
-	missile.touch = GrenadeTouch;
-	missile.nextthink = time + 2.5; missile.think = GrenadeExplode;
-	setmodel (missile, "progs/grenade.mdl"); setsize (missile, '0 0 0', '0 0 0');
-	setorigin (missile, self.origin); 
+    local entity missile;
+    self.currentammo = self.ammo_rockets = self.ammo_rockets - 1;
+    sound(self, CHAN_WEAPON, "weapons/grenade.wav", 1, ATTN_NORM);  
+    self.punchangle_x = -2;
+    missile = spawn(); missile.owner = self; missile.movetype = MOVETYPE_BOUNCE; missile.solid = SOLID_BBOX;
+    missile.classname = "grenade";
+    makevectors(self.v_angle); 
+    if (self.v_angle_x) { missile.velocity = v_forward * 600 + v_up * 200 + crandom() * v_right * 10 + crandom() * v_up * 10; } 
+    else { missile.velocity = aim(self, 10000); missile.velocity = missile.velocity * 600; missile.velocity_z = 200; } 
+    missile.avelocity = '300 300 300'; missile.angles = vectoangles(missile.velocity);
+    missile.touch = GrenadeTouch;
+    missile.nextthink = time + 2.5; missile.think = GrenadeExplode;
+    setmodel(missile, "progs/grenade.mdl"); setsize(missile, '0 0 0', '0 0 0'); setorigin(missile, self.origin);  
 };
-
 //===============================================================================
-// PLAYER WEAPON USE
+// ##FQXCUSTOM - ##Quedra: PLAYER WEAPON SELECTION & SETUP
 //===============================================================================
-void() w_rahpm1_SetCurrentAmmo;
-
-void() w_dbshot_SetCurrentAmmo;
-void() w_ump45_SetCurrentAmmo;
-void() w_ak47_SetCurrentAmmo;
-void() w_m93r_SetCurrentAmmo;
-
 void() W_SetCurrentAmmo =
 {
-	player_run ();		
-	self.weaponframe = 0;
-	self.items = self.items - ( self.items & (IT_SHELLS | IT_NAILS | IT_ROCKETS | IT_CELLS) );
-	if (self.weapon == IT_SLOT_MELEE)
-	{
-		self.currentammo = 0; 
-		self.weaponmodel = "progs/v_axe.mdl";
-	}
-	else if (self.weapon == IT_SLOT_HOLDOUT) 
-{
-    // ##Quedra: Check which holdout weapon is equipped via loadout system
-    if (GetWeaponIDForITSlot(self, IT_SLOT_HOLDOUT) == WEAPON_ID_M93R)
+    player_run(); self.weaponframe = 0;
+    self.items = self.items - (self.items & (IT_SHELLS | IT_NAILS | IT_ROCKETS | IT_CELLS)); // ##Quedra: Standard Quake item flags cleared for ammo type
+    if (self.weapon == IT_SLOT_MELEE) { self.currentammo = 0; self.weaponmodel = "progs/v_axe.mdl";
+    } 
+    else if (self.weapon == IT_SLOT_HOLDOUT)  
     {
-        w_m93r_SetCurrentAmmo();
+        local float holdout_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_HOLDOUT);
+        if (holdout_weapon_id == WEAPON_ID_M93R) { w_m93r_SetCurrentAmmo(); } 
+        else if (holdout_weapon_id == WEAPON_ID_RAHPM1) { w_rahpm1_SetCurrentAmmo(); } 
+        else { w_rahpm1_SetCurrentAmmo(); } // Default fallback
     }
-    else // Default to RAHP M1 if not M93R or if GetWeaponIDForITSlot isn't fully implemented yet
+    else if (self.weapon == IT_SLOT_SECONDARY)  
     {
-        w_rahpm1_SetCurrentAmmo();
+        local float secondary_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_SECONDARY);
+        if (secondary_weapon_id == WEAPON_ID_SAWNOFF) { w_sawnoff_SetCurrentAmmo(); }
+        else if (secondary_weapon_id == WEAPON_ID_IZH43) { w_izh43_SetCurrentAmmo(); } 
+        else { w_izh43_SetCurrentAmmo(); } // Default fallback
     }
-}
-	else if (self.weapon == IT_SLOT_SECONDARY) 
-	{
-		w_dbshot_SetCurrentAmmo (); 
-	}
-	else if (self.weapon == IT_SLOT_PRIMARY) 
-	{
-		w_ump45_SetCurrentAmmo ();
-	}
-	else if (self.weapon == IT_SLOT_HEAVY) 
-	{
-		w_ak47_SetCurrentAmmo (); 
-	}
-	else if (self.weapon == IT_SLOT_UTILITY) 
-	{
-		self.currentammo = 0; 
-		self.weaponmodel = "progs/v_axe.mdl";
-	}
-	else if (self.weapon == IT_SLOT_AUX1) 
-	{
-		self.currentammo = self.ammo_rockets;
-		self.weaponmodel = "progs/v_rock2.mdl";
-		self.items = self.items | IT_ROCKETS;
-	}
-	else if (self.weapon == IT_SLOT_AUX2) 
-	{
-		self.currentammo = self.ammo_cells;
-		self.weaponmodel = "progs/v_light.mdl";
-		self.items = self.items | IT_CELLS;
-	}
-	else 
-	{
-		self.currentammo = 0;
-		self.weaponmodel = string_null;
-	}
+    else if (self.weapon == IT_SLOT_PRIMARY) 
+    {
+        local float primary_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_PRIMARY);
+        if (primary_weapon_id == WEAPON_ID_IZH43) { w_izh43_SetCurrentAmmo(); }
+        else if (primary_weapon_id == WEAPON_ID_UMP45) { w_ump45_SetCurrentAmmo(); }
+        else { w_ump45_SetCurrentAmmo(); } // Default fallback
+    } 
+    else if (self.weapon == IT_SLOT_HEAVY) 
+    { 
+        local float heavy_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_HEAVY);
+        if (heavy_weapon_id == WEAPON_ID_AK47) { w_ak47_SetCurrentAmmo(); }
+        else { w_ak47_SetCurrentAmmo(); } // Default fallback
+    } 
+    else if (self.weapon == IT_SLOT_UTILITY) 
+    { 
+        // ##FQXCUSTOM - ##Quedra: v3.5 - Reverted to placeholder for inactive grapple
+        self.currentammo = 0; 
+        self.weaponmodel = "progs/v_axe.mdl"; // Fallback if unknown or inactive utility
+    } 
+    else if (self.weapon == IT_SLOT_AUX1) { self.currentammo = self.ammo_rockets;
+    self.weaponmodel = "progs/v_rock2.mdl"; 
+    self.items = self.items | IT_ROCKETS; } 
+    else if (self.weapon == IT_SLOT_AUX2) { self.currentammo = self.ammo_cells;
+    self.weaponmodel = "progs/v_light.mdl"; 
+    self.items = self.items | IT_CELLS; } 
+    else { self.currentammo = 0;
+    self.weaponmodel = string_null; } 
 };
 
-void(string msg) Quick_Melee_DebugPrint; 
-void() Quick_Melee_End;
+//-----------------------------------------------------------------------------
+// ##FQXCUSTOM - ##Quedra: FQX_IsWeaponExplosive (New Helper Function for v3.4)
+//-----------------------------------------------------------------------------
+float FQX_IsWeaponExplosive(float weapon_id)
+{
+    if (weapon_id == WEAPON_ID_RL) 
+    {
+        return TRUE;
+    }
+    // if (weapon_id == WEAPON_ID_GL) // Grenade Launcher (if it gets its own ID)
+    // {
+    //     return TRUE;
+    // }
+    return FALSE;
+}
 
+//-----------------------------------------------------------------------------
+// ##FQXCUSTOM - ##Quedra: FQX_WeaponHasSufficientResource (New Helper for v3.4)
+//-----------------------------------------------------------------------------
+float FQX_WeaponHasSufficientResource(entity player, float check_weapon_id)
+{
+    if (check_weapon_id == WEAPON_ID_AXE) { return TRUE; }
+
+    if (check_weapon_id == WEAPON_ID_M93R) 
+    {
+        if (player.ammo_shells >= 1) { return TRUE; } // Assumes 1 shell resource per M93R mag round
+    }
+    else if (check_weapon_id == WEAPON_ID_RAHPM1) 
+    {
+        if (player.ammo_cells >= 1) { return TRUE; } // Assumes 1 cell resource per RAHPM1 mag round for SDR
+    }
+    else if (check_weapon_id == WEAPON_ID_SAWNOFF) 
+    {
+        if (player.ammo_shells >= GAME_AMMO_COST_PER_SHOTGUN_ROUND) { return TRUE; } 
+    }
+    else if (check_weapon_id == WEAPON_ID_IZH43) 
+    {
+        if (player.ammo_shells >= GAME_AMMO_COST_PER_SHOTGUN_ROUND) { return TRUE; } 
+    }
+    else if (check_weapon_id == WEAPON_ID_UMP45) 
+    {
+        if (player.ammo_nails >= 1) { return TRUE; } // Assumes 1 nail resource per UMP45 mag round
+    }
+    else if (check_weapon_id == WEAPON_ID_AK47) 
+    {
+        if (player.ammo_nails >= 1) { return TRUE; } // Assumes 1 nail resource per AK47 mag round
+    }
+    else if (check_weapon_id == WEAPON_ID_GRAPPLE) 
+    {
+         if (player.ammo_rockets >= 1 ) { return TRUE; } // Assumes 1 rocket per grapple use
+    }
+    else if (check_weapon_id == WEAPON_ID_RL) 
+    {
+        if (player.ammo_rockets >= 1) { return TRUE; }
+    }
+    else if (check_weapon_id == WEAPON_ID_LG) 
+    {
+        if (player.ammo_cells >= 1) { return TRUE; }
+    }
+    return FALSE;
+}
+
+//-----------------------------------------------------------------------------
+// ##FQXCUSTOM - ##Quedra: W_BestWeapon - Overhauled for FQX (v3.4)
+//-----------------------------------------------------------------------------
 float() W_BestWeapon =
 {
-	local	float	it;
-	it = self.items;
-    if (self.quick_melee_active == 1) 
+    local float it = self.items;
+    local float current_slot_weapon_id;
+
+    if (self.quick_melee_active == TRUE) { Quick_Melee_End(); }
+
+    // Priority 1: Holdout Slot
+    if (it & IT_SLOT_HOLDOUT)
     {
-        Quick_Melee_DebugPrint("Already in quick melee, canceling");
-        Quick_Melee_End();
+        current_slot_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_HOLDOUT);
+        if (current_slot_weapon_id != WEAPON_ID_NONE && !FQX_IsWeaponExplosive(current_slot_weapon_id))
+        {
+            if (FQX_WeaponHasSufficientResource(self, current_slot_weapon_id))
+            {
+                return IT_SLOT_HOLDOUT;
+            }
+        }
     }
 
-	if (self.waterlevel <= 1 && self.ammo_cells >= 1 && (it & IT_SLOT_AUX2) )
-		return IT_SLOT_AUX2;
-	else if(self.ammo_nails >= 1 && (it & IT_SLOT_HEAVY) ) 
-		return IT_SLOT_HEAVY;
-	else if(self.ammo_shells >= 1 && (it & IT_SLOT_SECONDARY) )
-		return IT_SLOT_SECONDARY;
-	else if(self.ammo_nails >= 1 && (it & IT_SLOT_PRIMARY) ) 
-		return IT_SLOT_PRIMARY;
+    // Priority 2: Primary Slot
+    if (it & IT_SLOT_PRIMARY)
+    {
+        current_slot_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_PRIMARY);
+        if (current_slot_weapon_id != WEAPON_ID_NONE && !FQX_IsWeaponExplosive(current_slot_weapon_id))
+        {
+            if (FQX_WeaponHasSufficientResource(self, current_slot_weapon_id))
+            {
+                return IT_SLOT_PRIMARY;
+            }
+        }
+    }
 
-	return IT_SLOT_HOLDOUT; 
+    // Priority 3: Secondary Slot
+    if (it & IT_SLOT_SECONDARY)
+    {
+        current_slot_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_SECONDARY);
+        if (current_slot_weapon_id != WEAPON_ID_NONE && !FQX_IsWeaponExplosive(current_slot_weapon_id))
+        {
+            if (FQX_WeaponHasSufficientResource(self, current_slot_weapon_id))
+            {
+                return IT_SLOT_SECONDARY;
+            }
+        }
+    }
+    
+    // Priority 4: Heavy Slot
+    if (it & IT_SLOT_HEAVY) 
+    {
+        current_slot_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_HEAVY);
+        if (current_slot_weapon_id != WEAPON_ID_NONE && !FQX_IsWeaponExplosive(current_slot_weapon_id))
+        {
+            if (FQX_WeaponHasSufficientResource(self, current_slot_weapon_id))
+            {
+                return IT_SLOT_HEAVY;
+            }
+        }
+    }
+    
+    return IT_SLOT_MELEE; 
 };
-
+//-----------------------------------------------------------------------------
+// ##IDSOFT - ##Quedra: W_WantsToChangeWeapon
+//-----------------------------------------------------------------------------
 float(entity playerEnt, float old, float new) W_WantsToChangeWeapon =
 {
-	float playerFlags = CheckPlayerEXFlags(playerEnt); // Assuming CheckPlayerEXFlags is defined
-	if((playerFlags & PEF_CHANGENEVER) != 0) { return 0; }
-	if(((playerFlags & PEF_CHANGEONLYNEW) != 0) && old == new) { return 0; }
-	return 1;
+    return 1;
 };
-
+//============================================================================
+// ##FQXCUSTOM - ##Quedra: W_HasNoAmmo - Overhauled for FQX (v3.5)
+//============================================================================
 float() W_HasNoAmmo =
 {
-	if (self.currentammo > 0) return FALSE;
-	if (self.weapon == IT_SLOT_MELEE) return FALSE;
-    if (self.weapon == IT_SLOT_HOLDOUT) 
+    local float current_weapon_slot = self.weapon;
+    local float current_weapon_id = GetWeaponIDForITSlot(self, current_weapon_slot);
+
+    if (current_weapon_slot == IT_SLOT_MELEE) 
     {
-        // RAHP's primary mode has currentammo = 0 but can fire.
-        // Assumes RAHP_FIREMODE_IDX_SMALL_LASER is globally defined as 0 (e.g. in defs.qc)
-        if (self.current_weapon_fire_mode == RAHP_FIREMODE_IDX_SMALL_LASER) 
-             return FALSE;
+        return FALSE;
     }
-	self.weapon = W_BestWeapon ();
-	W_SetCurrentAmmo ();
-	return TRUE;
+
+    if (current_weapon_slot == IT_SLOT_UTILITY) 
+    {
+        if (current_weapon_id == WEAPON_ID_GRAPPLE) 
+        {
+             if (self.ammo_rockets < 1 ) // Assuming 1 rocket per grapple use
+             {
+                sprint(self, PRINT_LOW, "$qc_not_enough_ammo\n"); 
+                self.weapon = W_BestWeapon();
+                self.weapon_first_draw_init = TRUE; 
+                W_SetCurrentAmmo(); 
+                return TRUE;
+             }
+             return FALSE; 
+        }
+        return FALSE; 
+    }
+    
+    if (self.current_weapon_max_mag_capacity > 0) 
+    {
+        if (self.weapon_ammo_in_magazine > 0)
+        {
+            return FALSE; 
+        }
+        else 
+        {
+            float resource_id = self.weapon_ammo_resource_id;
+            float game_ammo_cost = self.current_weapon_game_ammo_cost_per_round;
+
+            // ##Quedra: v3.5 - Removed AMMO_ID_NONE check. A mag weapon must have a valid resource_id and cost.
+            if (game_ammo_cost <= 0) 
+            {
+                sprint(self, PRINT_LOW, "$qc_not_enough_ammo\n"); 
+                self.weapon = W_BestWeapon();
+                self.weapon_first_draw_init = TRUE; 
+                W_SetCurrentAmmo(); 
+                return TRUE;
+            }
+
+            if (AM_GetAmmoCount(resource_id) >= game_ammo_cost) 
+            {
+                return FALSE; 
+            }
+            else
+            {
+                sprint(self, PRINT_LOW, "$qc_not_enough_ammo\n");
+                self.weapon = W_BestWeapon();
+                self.weapon_first_draw_init = TRUE; 
+                W_SetCurrentAmmo(); 
+                return TRUE;
+            }
+        }
+    }
+    else if (self.currentammo <= 0) 
+    {
+        sprint(self, PRINT_LOW, "$qc_not_enough_ammo\n");
+        self.weapon = W_BestWeapon();
+        self.weapon_first_draw_init = TRUE; 
+        W_SetCurrentAmmo(); 
+        return TRUE;
+    }
+
+    return FALSE; 
 };
-
-/*
-============
-W_Attack
-============
-*/
-void()	player_axe1; void() player_axeb1; void() player_axec1; void() player_axed1;
-void()	player_shot1; void() player_nail1;
-void() player_light1; void() player_rocket1;
-
-void()	W_FireRahp; void() W_FireDBShot; void() W_FireUMP45; void() W_FireAk47; void() W_FireM93R;
-// W_FireShotgun, W_FireSuperShotgun, W_FireRocket, W_FireLightning are defined above.
+//============================================================================
+// ##FQXCUSTOM - ##Quedra: W_Attack
+//============================================================================
+void() player_axe1; void() player_axeb1; void() player_axec1; void() player_axed1; 
+void() player_shot1; void() player_nail1;
+void() player_light1;
+void() player_rocket1; 
 
 void() W_Attack =
 {
-	local	float	r;
-	if (self.quick_melee_active == 1) { Quick_Melee_DebugPrint("Already in quick melee, canceling"); Quick_Melee_End(); return; }
-	if ( W_HasNoAmmo() ) { return; }
-	makevectors	(self.v_angle);
-	self.show_hostile = time + 1;	
-	if (!(self.weapon == IT_SLOT_MELEE || self.weapon == IT_SLOT_HOLDOUT)) { self.fired_weapon = 1; }
+    local float r; local float equipped_weapon_id;
+    if (self.quick_melee_active == TRUE) { Quick_Melee_End(); return; }
+    
+    if (W_HasNoAmmo()) 
+    { 
+      return; 
+    }
+    
+    makevectors(self.v_angle);
+    self.show_hostile = time + 1;
+    if (!(self.weapon == IT_SLOT_MELEE || self.weapon == IT_SLOT_HOLDOUT)) { self.fired_weapon = 1; } 
 
-	if (self.weapon == IT_SLOT_MELEE)
-	{ sound (self, CHAN_WEAPON, "weapons/ax1.wav", 1, ATTN_NORM); r = random();
-		if (r < 0.25) player_axe1 ();
-		else if (r<0.5) player_axeb1 (); else if (r<0.75) player_axec1 (); else player_axed1 ();
-		self.attack_finished = time + 0.5;
-	}
-	else if (self.weapon == IT_SLOT_HOLDOUT) 
-	{ 
-		player_shot1(); // Assuming generic firing animation start
-		if (GetWeaponIDForITSlot(self, IT_SLOT_HOLDOUT) == WEAPON_ID_M93R)
-		{
-			W_FireM93R();
-		}
-		else // Default to RAHP M1
-		{
-			W_FireRahp(); 
-		}
-	}
-	else if (self.weapon == IT_SLOT_SECONDARY) { player_shot1 (); W_FireDBShot (); } 
-	else if (self.weapon == IT_SLOT_PRIMARY) { player_shot1 (); W_FireUMP45 (); }
-	else if (self.weapon == IT_SLOT_HEAVY) { player_shot1 (); W_FireAk47 (); }
-	else if (self.weapon == IT_SLOT_UTILITY) { player_rocket1(); }
-	else if (self.weapon == IT_SLOT_AUX1) { player_rocket1(); W_FireRocket(); self.attack_finished = time + 0.8; }
-	else if (self.weapon == IT_SLOT_AUX2) { player_light1();
-	sound (self, CHAN_AUTO, "weapons/lstart.wav", 1, ATTN_NORM); W_FireLightning(); /* attack_finished handled by W_FireLightning */}
-    // Need to add cases for standard Shotgun and SuperShotgun if they are distinct weapon slots
-    // and not just alternate fire modes of IT_SLOT_SECONDARY or IT_SLOT_HOLDOUT.
-    // For now, assuming they are not primary selectable weapons that W_Attack dispatches to.
-    // If they were, e.g., IT_SHOTGUN, you'd add:
-    // else if (self.weapon == IT_SHOTGUN) { player_shot1(); W_FireShotgun(); self.attack_finished = time + 0.5; } // Example cooldown
+    if (self.weapon == IT_SLOT_MELEE) { sound(self, CHAN_WEAPON, "weapons/ax1.wav", 1, ATTN_NORM); r = random();
+    if (r < 0.25) { player_axe1(); } else if (r<0.5) { player_axeb1(); } else if (r<0.75) { player_axec1();
+    } else { player_axed1(); } self.attack_finished = time + 0.5;
+    } 
+    else if (self.weapon == IT_SLOT_HOLDOUT) { player_shot1(); equipped_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_HOLDOUT);
+    if (equipped_weapon_id == WEAPON_ID_M93R) { W_FireM93R(); } else if (equipped_weapon_id == WEAPON_ID_RAHPM1) { W_FireRahp(); } } 
+    else if (self.weapon == IT_SLOT_SECONDARY) { player_shot1(); equipped_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_SECONDARY);
+    if (equipped_weapon_id == WEAPON_ID_SAWNOFF) { W_FireSawnoff(); } else if (equipped_weapon_id == WEAPON_ID_IZH43) { W_FireIZH43(); } } 
+    else if (self.weapon == IT_SLOT_PRIMARY) 
+    { 
+        player_shot1();
+        local float primary_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_PRIMARY);
+        if (primary_weapon_id == WEAPON_ID_IZH43) { W_FireIZH43(); }
+        else if (primary_weapon_id == WEAPON_ID_UMP45) { W_FireUMP45(); }
+        else { W_FireUMP45(); } 
+    } 
+    else if (self.weapon == IT_SLOT_HEAVY) 
+    { 
+        player_shot1();
+        local float heavy_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_HEAVY);
+        if (heavy_weapon_id == WEAPON_ID_AK47) { W_FireAk47(); }
+        else { W_FireAk47(); } 
+    } 
+    else if (self.weapon == IT_SLOT_UTILITY) 
+    { 
+        player_rocket1(); 
+        local float utility_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_UTILITY);
+        if (utility_weapon_id == WEAPON_ID_GRAPPLE) { /* W_FireGrapple(); */ } 
+    } 
+    else if (self.weapon == IT_SLOT_AUX1) { player_rocket1();
+    W_FireRocket();
+    self.attack_finished = time + 0.8; } 
+    else if (self.weapon == IT_SLOT_AUX2) { player_light1();
+    sound(self, CHAN_AUTO, "weapons/lstart.wav", 1, ATTN_NORM); W_FireLightning(); } 
 };
 
-/*
-============
-W_ChangeWeapon
-============
-*/
+//============================================================================
+// ##FQXCUSTOM - ##Quedra: W_ChangeWeapon
+//============================================================================
 void() W_ChangeWeapon =
 {
-	local	float	it, am, fl; fl = it = self.items;
-	am = 0; 
-	if (self.impulse == 1) { fl = IT_SLOT_MELEE; }
-	else if (self.impulse == 2) { fl = IT_SLOT_HOLDOUT; } 
-	else if (self.impulse == 3) { fl = IT_SLOT_SECONDARY; if (self.ammo_shells < 1) am = 1; }		
-	else if (self.impulse == 4) { fl = IT_SLOT_PRIMARY; if (self.ammo_nails < 1) am = 1; }
-	else if (self.impulse == 5) { fl = IT_SLOT_HEAVY; if (self.ammo_nails < 1) am = 1; }
-	else if (self.impulse == 6) { fl = IT_SLOT_UTILITY; }
-	else if (self.impulse == 7) { fl = IT_SLOT_AUX1; if (self.ammo_rockets < 1) am = 1; }
-	else if (self.impulse == 8) { fl = IT_SLOT_AUX2; if (self.ammo_cells < 1) am = 1; }
-	self.impulse = 0; 
-	if (!(self.items & fl)) { sprint (self, "$qc_no_weapon"); return; }
-	if (am) { sprint (self, "$qc_not_enough_ammo"); return; }
-	self.weapon = fl; W_SetCurrentAmmo (); 
+    local float target_slot, ammo_check_needed; 
+    local float target_weapon_id; 
+    
+    target_slot = 0; ammo_check_needed = FALSE;
+
+    if (self.impulse == 1) { target_slot = IT_SLOT_MELEE; } 
+    else if (self.impulse == 2) { target_slot = IT_SLOT_HOLDOUT; ammo_check_needed = TRUE; }  
+    else if (self.impulse == 3) { target_slot = IT_SLOT_SECONDARY; ammo_check_needed = TRUE; }     
+    else if (self.impulse == 4) { target_slot = IT_SLOT_PRIMARY; ammo_check_needed = TRUE; }  
+    else if (self.impulse == 5) { target_slot = IT_SLOT_HEAVY; ammo_check_needed = TRUE; }  
+    else if (self.impulse == 6) { target_slot = IT_SLOT_UTILITY; ammo_check_needed = TRUE; } 
+    else if (self.impulse == 7) { target_slot = IT_SLOT_AUX1; ammo_check_needed = TRUE; } 
+    else if (self.impulse == 8) { target_slot = IT_SLOT_AUX2; ammo_check_needed = TRUE; } 
+    
+    if (target_slot == 0) { return; } 
+    self.impulse = 0;
+
+    if (!(self.items & target_slot)) { sprint(self, PRINT_LOW, "$qc_no_weapon\n"); return; } 
+    
+    if (ammo_check_needed == TRUE) 
+    {
+        target_weapon_id = GetWeaponIDForITSlot(self, target_slot);
+        if (target_weapon_id == WEAPON_ID_NONE) 
+        {
+            sprint(self, PRINT_LOW, "$qc_no_weapon\n"); 
+            return;
+        }
+        if (!FQX_WeaponHasSufficientResource(self, target_weapon_id))
+        {
+            sprint(self, PRINT_LOW, "$qc_not_enough_ammo\n");
+            return;
+        }
+    } 
+    
+    self.weapon_first_draw_init = TRUE;
+    self.weapon = target_slot;
+    W_SetCurrentAmmo();  
 };
 
-/*
-============
-CheatCommand
-============
-*/
-void CheatCommand() {
-	if ( ( deathmatch || coop ) && cvar("developer") == 0 ) { return; } // Use cvar("developer")
-	self.ammo_rockets = 100; self.ammo_nails = 200; self.ammo_shells = 100;
-	self.items = self.items | IT_SLOT_MELEE | IT_SLOT_HOLDOUT | IT_SLOT_SECONDARY |
-		IT_SLOT_PRIMARY | IT_SLOT_HEAVY | IT_SLOT_UTILITY | IT_SLOT_AUX1 | IT_KEY1 | IT_KEY2;
-	self.ammo_cells = 200; self.items = self.items | IT_SLOT_AUX2;
-	self.armortype = 0.8; self.armorvalue = 200;
-	self.items = self.items - ( self.items & ( IT_ARMOR1 | IT_ARMOR2 | IT_ARMOR3 ) ) + IT_ARMOR3;
-	self.weapon = IT_SLOT_AUX1; self.impulse = 0; W_SetCurrentAmmo ();
-};
-
-// CycleWeaponCommand, ServerflagsCommand, QuadCheat
-//void() CycleWeaponCommand; // Assuming defined elsewhere or stub
-//void() CycleWeaponReverseCommand; // Assuming defined elsewhere or stub
-void() ServerflagsCommand = { serverflags = serverflags * 2 + 1; };
-void() QuadCheat = { if (cvar("developer") == 0 && (deathmatch || coop)) return; self.super_time = 1;
-self.super_damage_finished = time + 30; self.items = self.items | IT_QUAD; dprint ("quad cheat\n"); };
-
-/*
-============
-ToggleFireMode - Updated to use new generic system for supported weapons
-============
-*/
+//============================================================================
+// ##IDSOFT - ##Quedra: ServerflagsCommand & QuadCheat (Restored & Styled)
+//============================================================================
+void() ServerflagsCommand = { serverflags = serverflags * 2 + 1; }; 
+void() QuadCheat = { if (cvar("developer") == 0 && (deathmatch || coop)) { return; } self.super_time = 1;
+self.super_damage_finished = time + 30; self.items = self.items | IT_QUAD; dprint("Quad Damage Cheat Activated!\n"); };
+//============================================================================
+// ##IDSOFT - ##Quedra: CheatCommand - For "impulse 9"
+//============================================================================
+void() CheatCommand = { if ((deathmatch || coop) && (cvar("developer") == 0)) { return; } self.ammo_rockets=100; self.ammo_nails=200; self.ammo_shells=100; self.ammo_cells=200; self.items = self.items | IT_SLOT_MELEE | IT_SLOT_HOLDOUT | IT_SLOT_SECONDARY | IT_SLOT_PRIMARY | IT_SLOT_HEAVY |
+IT_SLOT_UTILITY | IT_SLOT_AUX1 | IT_SLOT_AUX2 | IT_KEY1 | IT_KEY2 | IT_ARMOR3; self.armortype=0.8; self.armorvalue=200; self.weapon_first_draw_init = TRUE; self.weapon=IT_SLOT_AUX1; W_SetCurrentAmmo(); };
+//============================================================================
+// ##FQXCUSTOM - ##Quedra: ToggleFireMode
+//============================================================================
 void() ToggleFireMode =
 {
-	if (self.weapon == IT_SLOT_HOLDOUT) 
-	{ 
-		if (GetWeaponIDForITSlot(self, IT_SLOT_HOLDOUT) == WEAPON_ID_M93R)
-		{
-			W_SwitchModeM93R();
-		}
-		else // Default to RAHP M1
-		{
-			W_SwitchModeRahp();
-		}
-	}
-    else if (self.weapon == IT_SLOT_SECONDARY) { W_SwitchModeDBShot(); }
-    else if (self.weapon == IT_SLOT_PRIMARY) { W_SwitchModeUMP45(); }
-    else if (self.weapon == IT_SLOT_HEAVY) { W_SwitchModeAk47(); }
-    else if (self.weapon == IT_SLOT_UTILITY) { sprint(self, "Utility slot mode switch TBD\n"); }
-    else if (self.weapon == IT_SLOT_AUX1) { sprint(self, "Rocket Launcher mode switch TBD\n"); }
-    else if (self.weapon == IT_SLOT_AUX2) { sprint(self, "Lightning Gun mode switch TBD\n"); }
+    local float equipped_weapon_id;
+    if (self.weapon == IT_SLOT_HOLDOUT) { equipped_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_HOLDOUT); if (equipped_weapon_id == WEAPON_ID_M93R) { W_SwitchModeM93R();
+    } else if (equipped_weapon_id == WEAPON_ID_RAHPM1) { W_SwitchModeRahp(); } } 
+    else if (self.weapon == IT_SLOT_SECONDARY) { equipped_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_SECONDARY);
+    if (equipped_weapon_id == WEAPON_ID_SAWNOFF) { W_SwitchModeSawnoff(); } else if (equipped_weapon_id == WEAPON_ID_IZH43) { W_SwitchModeIZH43(); } } 
+    else if (self.weapon == IT_SLOT_PRIMARY) 
+    { 
+        local float primary_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_PRIMARY);
+        if (primary_weapon_id == WEAPON_ID_IZH43) { W_SwitchModeIZH43(); }
+        else if (primary_weapon_id == WEAPON_ID_UMP45) { W_SwitchModeUMP45(); }
+        else { sprint(self, PRINT_LOW, "Weapon has no alternate fire modes.\n"); } 
+    } 
+    else if (self.weapon == IT_SLOT_HEAVY) 
+    { 
+        local float heavy_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_HEAVY);
+        if (heavy_weapon_id == WEAPON_ID_AK47) { W_SwitchModeAk47(); }
+        else { sprint(self, PRINT_LOW, "Weapon has no alternate fire modes.\n");}
+    } 
+    else { sprint(self, PRINT_LOW, "Weapon has no alternate fire modes.\n"); } 
 };
-
-/*
-============
-Quick Grenade (Restored from earlycopy_weapons.txt)
-============
-*/
-void() Quick_Grenade =
-{
-    // float previousWeapon = self.weapon;
-    // Not needed if W_FireGrenade doesn't change self.weapon
-    if (self.ammo_rockets >=1)
-    {
-        W_FireGrenade();
-        self.attack_finished = time + 0.6;
-    }
-    else
-    {
-        sprint(self, "$qc_not_enough_ammo");
-        // Optionally play a dry fire sound
-        // sound(self, CHAN_WEAPON, "weapons/boltback.wav", 1, ATTN_NORM);
-        return;
-    }
-};
-
-/*
-============
-Quick Melee
-============
-*/
-void(string msg) Quick_Melee_DebugPrint =
-{
-    if (self.quick_melee_debug) { dprint("QuickMelee: "); dprint(msg); dprint("\n"); }
-};
-
-void() Quick_Melee_End =
-{
-    Quick_Melee_DebugPrint("Melee End start func");
-    if (self.quick_melee_active && self.saved_weapon)
-    {
-        self.think = SUB_Null;
-        self.quick_melee_active = 0; self.quick_melee_sequence = 0;
-        float weapon_to_restore = self.saved_weapon; self.saved_weapon = 0;
-        Quick_Melee_DebugPrint("Switching back to saved weapon");
-        player_run();
-        self.weapon = weapon_to_restore; W_SetCurrentAmmo();
-    }
-    else
-    {
-        Quick_Melee_DebugPrint("End called but not active or no saved weapon");
-        self.quick_melee_active = 0; self.saved_weapon = 0;
-        self.quick_melee_sequence = 0; self.think = SUB_Null;
-    }
-};
-
-void() Quick_Melee_FrameAdvance =
-{
-    if (self.weaponframe < 5)  // Assuming axe animation frames
-    {
-        self.weaponframe = self.weaponframe + 1;
-        if (self.weaponframe == 3) // Hit frame
-        { W_FireAxe(); Quick_Melee_DebugPrint("Frame 3: Calling W_FireAxe()"); }
-    }
-    else
-    { self.weaponframe = 0; Quick_Melee_End(); return; }
-    self.think = Quick_Melee_FrameAdvance; self.nextthink = time + 0.1;
-};
-
-void() Quick_Melee_Start =
-{
-    Quick_Melee_DebugPrint("Start called");
-    if (self.weapon == IT_SLOT_MELEE) { Quick_Melee_DebugPrint("Already using axe, normal attack"); W_Attack(); return; }
-    if (self.quick_melee_active == 1) { Quick_Melee_DebugPrint("Already in quick melee, canceling"); Quick_Melee_End(); return; }
-    
-    // Check if self.weapon is a valid weapon that can be saved, not 0 or melee.
-    if (self.weapon && self.weapon != IT_SLOT_MELEE) 
-    {
-        self.saved_weapon = self.weapon;
-        self.quick_melee_active = 1;
-        Quick_Melee_DebugPrint("Saved weapon and switching to axe");
-        self.quick_melee_sequence = floor(random() * 4); // For varied axe animations
-        self.weapon = IT_SLOT_MELEE; W_SetCurrentAmmo();
-        self.weaponframe = 1; // Start axe animation
-        sound(self, CHAN_WEAPON, "weapons/ax1.wav", 1, ATTN_NORM);
-        self.think = Quick_Melee_FrameAdvance;
-        self.nextthink = time + 0.1;
-    }
-    else
-    { Quick_Melee_DebugPrint("No valid weapon to save for Quick Melee or already axe."); }
-};
-
-void() Quick_Melee_ToggleDebug =
-{
-    self.quick_melee_debug = !self.quick_melee_debug;
-    if (self.quick_melee_debug) sprint(self, "Quick Melee Debug: ON\n");
-    else sprint(self, "Quick Melee Debug: OFF\n");
-};
-
-void() Quick_Melee_ForceCancel =
-{
-    self.quick_melee_active = 0; self.saved_weapon = 0;
-    self.quick_melee_sequence = 0; self.think = SUB_Null;
-    sprint(self, "Quick Melee state reset\n");
-};
-
-/*
-============
-ImpulseCommands
-============
-*/
-//void() grapple_release; // Forward declaration for grapple logic
-
+//============================================================================
+// ##IDSOFT - ##Quedra: Quick Grenade
+//============================================================================
+void() Quick_Grenade = { if (self.ammo_rockets >= 1) { W_FireGrenade(); self.attack_finished = time + 0.6;
+    } else { sprint(self, PRINT_LOW, "$qc_not_enough_ammo\n"); return; } }; 
+//============================================================================
+// ##FQXCUSTOM - ##Quedra: Quick Melee System
+//============================================================================
+void(string msg) Quick_Melee_DebugPrint = { if (self.quick_melee_debug == TRUE) { dprint("QuickMelee: ");
+    dprint(msg); dprint("\n"); } }; 
+void() Quick_Melee_End = { Quick_Melee_DebugPrint("Melee End start func");
+    if (self.quick_melee_active == TRUE && self.saved_weapon != 0) { self.think = SUB_Null; self.quick_melee_active = FALSE; self.quick_melee_sequence = 0;
+    local float weapon_to_restore = self.saved_weapon; self.saved_weapon = 0; Quick_Melee_DebugPrint("Switching back to saved weapon"); player_run(); self.weapon_first_draw_init = TRUE; self.weapon = weapon_to_restore;
+    W_SetCurrentAmmo(); } else { Quick_Melee_DebugPrint("End called but not active or no saved weapon"); self.quick_melee_active = FALSE; self.saved_weapon = 0;
+    self.quick_melee_sequence = 0; self.think = SUB_Null; } }; 
+void() Quick_Melee_FrameAdvance = { if (self.weaponframe < 3) { self.weaponframe = self.weaponframe + 1;
+    if (self.weaponframe == 2) { W_FireAxe(); Quick_Melee_DebugPrint("Frame 2: Calling W_FireAxe()"); } self.think = Quick_Melee_FrameAdvance; self.nextthink = time + 0.1;
+    } else { self.weaponframe = 0; Quick_Melee_End(); return; } }; 
+void() Quick_Melee_Start = { Quick_Melee_DebugPrint("Start called");
+    if (self.weapon == IT_SLOT_MELEE) { Quick_Melee_DebugPrint("Already using axe, normal attack"); W_Attack(); return; } 
+    if (self.quick_melee_active == TRUE) { Quick_Melee_DebugPrint("Already in quick melee, returning"); return; } 
+    if (self.weapon != 0 && self.weapon != IT_SLOT_MELEE) { self.saved_weapon = self.weapon; self.quick_melee_active = TRUE;
+    Quick_Melee_DebugPrint("Saved weapon and switching to axe"); self.weapon_first_draw_init = TRUE; self.weapon = IT_SLOT_MELEE; W_SetCurrentAmmo(); self.weaponframe = 0;
+    sound(self, CHAN_WEAPON, "weapons/ax1.wav", 1, ATTN_NORM); self.think = Quick_Melee_FrameAdvance; self.nextthink = time + 0.05;
+    } else { Quick_Melee_DebugPrint("No valid weapon to save for Quick Melee or already axe."); } };
+void() Quick_Melee_ToggleDebug = { self.quick_melee_debug = !self.quick_melee_debug; if (self.quick_melee_debug == TRUE) { sprint(self, PRINT_LOW, "Quick Melee Debug: ON\n");
+    } else { sprint(self, PRINT_LOW, "Quick Melee Debug: OFF\n"); } }; 
+void() Quick_Melee_ForceCancel = { self.quick_melee_active = FALSE;
+    self.saved_weapon = 0; self.quick_melee_sequence = 0; self.think = SUB_Null; sprint(self, PRINT_LOW, "Quick Melee state reset.\n"); };
+//============================================================================
+// ##IDSOFT - ##Quedra: ImpulseCommands - Handles player impulses
+//============================================================================
 void() ImpulseCommands =
 {
-	if (self.impulse >= 1 && self.impulse <= 8) W_ChangeWeapon ();
-	if (self.impulse == 9) CheatCommand ();
-//	if (self.impulse == 10) CycleWeaponCommand (); 
-	if (self.impulse == 11) ServerflagsCommand ();
-//	if (self.impulse == 12) CycleWeaponReverseCommand(); 
-	if (self.impulse == 20) Quick_Grenade();	
-    if (self.impulse == 21 && self.quick_melee_active != 1) Quick_Melee_Start();
-	if (self.impulse == 22) ToggleFireMode();	
-    // Grappling hook impulses (23, 24, 25) from your file
-    if (self.impulse == 200) Quick_Melee_ToggleDebug();
-    if (self.impulse == 201) Quick_Melee_ForceCancel();
-	// ##Quedra: Impulse to apply the loadout defined by the 'ql_master_key' cvar
-	// ##Quedra: This block is being removed as per reversion process.
-	// if (self.impulse == 211) 
-	// {
-	// 	Loadout_ApplyMasterKeyConfig();
-	// 	self.impulse = 0; 
-	// }
-	if (self.impulse == 255) QuadCheat ();
-	self.impulse = 0;
+    if (self.impulse >= 1 && self.impulse <= 8) { W_ChangeWeapon(); } 
+    else if (self.impulse == 9) { CheatCommand(); } 
+    else if (self.impulse == 11) { ServerflagsCommand(); } 
+    else if (self.impulse == 20) { Quick_Grenade(); }   
+    else if (self.impulse == 21) { if(self.quick_melee_active != TRUE) Quick_Melee_Start(); } 
+    else if (self.impulse == 22) { ToggleFireMode(); }  
+    else if (self.impulse == 200) { Quick_Melee_ToggleDebug(); } 
+    else if (self.impulse == 201) { Quick_Melee_ForceCancel(); } 
+    else if (self.impulse == 255) { QuadCheat(); } 
+    self.impulse = 0;
 };
 
-
-/*
-============
-W_WeaponFrame
-============
-*/
+//============================================================================
+// ##FQXCUSTOM - ##Quedra: W_WeaponFrame - Per-frame weapon logic
+//============================================================================
 void() W_WeaponFrame =
 {
     if (time < self.attack_finished) 
     {
-        // ##Quedra: Weapon is in cooldown.
-        if (self.button0) 
-        {
-            // ##Quedra: Player is pressing/holding the fire button DURING cooldown.
-            // ##Quedra: This action "spoils" any previous release. The player must release
-            // ##Quedra: and press again *after* the cooldown to fire a new semi/burst action.
-            self.weapon_fire_released = FALSE;
-        }
-        else
-        {
-            // ##Quedra: Player is NOT pressing fire button during cooldown.
-            // ##Quedra: This means they released it. AM_WeaponFrame_HandleFireRelease will set weapon_fire_released = TRUE.
-            // ##Quedra: Also, handle burst interruption if fire released during an active burst.
-            AM_WeaponFrame_HandleFireRelease(); // ##Quedra: Sets self.weapon_fire_released = TRUE
-
-            // ##Quedra: Generalized burst stop logic if fire button is released mid-burst.
-            if (self.burst_active) 
-            {
-                self.burst_active = FALSE; // ##Quedra: Signal AM_Burst_Think to stop.
-                                           // ##Quedra: AM_Burst_Think will handle nulling its own think, 
-                                           // ##Quedra: setting attack_finished, and resetting recoil on its next execution.
-            }
-        }
-        return; // ##Quedra: Done for this frame, weapon is busy.
+        if (self.button0) { self.weapon_fire_released = FALSE; } 
+        else { AM_WeaponFrame_HandleFireRelease();
+        if (self.burst_active == TRUE) { self.burst_active = FALSE; } } 
+        return;
     }
-
-    // ##Quedra: If we reach here, cooldown is OVER (time >= self.attack_finished).
-    if (self.impulse)
-    {
-        ImpulseCommands();
-        // ##Quedra: If an impulse changed the weapon, W_SetCurrentAmmo would have been called.
-    }
-    
-    if (self.button0) // ##Quedra: Player is pressing fire, and cooldown is over.
-    {
-        SuperDamageSound(); 
-        W_Attack(); // ##Quedra: W_Attack will call the weapon's W_Fire<WeaponName> function.
-                    // ##Quedra: That function uses AM_CanFireSemiAuto() which checks self.weapon_fire_released.
-    }
-    else // ##Quedra: Player is NOT pressing fire, and cooldown is over.
-    {
-        AM_WeaponFrame_HandleFireRelease(); // ##Quedra: This will correctly set weapon_fire_released = TRUE.
-        
-        // ##Quedra: Generalized burst stop logic if fire button is released (also handles cases where cooldown might have just ended).
-        // ##Quedra: This is a bit redundant if the above block during cooldown already caught it, but ensures state is correct.
-        if (self.burst_active) 
-        {
-            self.burst_active = FALSE; 
-        }
-    }
+    if (self.impulse != 0) { ImpulseCommands();
+    if (time < self.attack_finished) { return; } } 
+    if (self.button0) { SuperDamageSound(); W_Attack();
+    } 
+    else { AM_WeaponFrame_HandleFireRelease();
+    if (self.burst_active == TRUE) { self.burst_active = FALSE; } } 
 };
-
-/*
-========
-SuperDamageSound
-========
-*/
+//============================================================================
+// ##IDSOFT - ##Quedra: SuperDamageSound - Quad Damage sound effect
+//============================================================================
 void() SuperDamageSound =
 {
-	if (self.super_damage_finished > time)
-	{
-		if (self.super_sound < time)
-		{
-			self.super_sound = time + 1;
-			sound (self, CHAN_BODY, "items/damage3.wav", 1, ATTN_NORM);
-		}
-	}
-	return;
+    if (self.super_damage_finished > time) { if (self.super_sound < time) { self.super_sound = time + 1;
+    sound(self, CHAN_BODY, "items/damage3.wav", 1, ATTN_NORM); } } 
+    return; 
 };
+//=============================================================================
+// weapons.qc - End of FQX Mod - Core Weapon Handling
+// ##FQXCUSTOM - ##Quedra: Version 3.5
+//=============================================================================

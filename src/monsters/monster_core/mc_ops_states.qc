@@ -1,6 +1,8 @@
 //=============================================================================
 // mc_ops_states.qc - FQX Mod - Monster Core Operations: States
-// ##FQX - ##Quedra: Version 1.8 - Segmented dprints in MC_Initialize_Monster to fix warnings.
+// ##FQX - ##Quedra: Version 1.8.1
+// ##Quedra: Gated initial dprint in MC_Initialize_Monster with mc_debug_prints_enabled.
+// ##Quedra: Previous: Version 1.8 - Segmented dprints in MC_Initialize_Monster to fix warnings.
 //=============================================================================
 
 //============================================================================
@@ -14,8 +16,11 @@ void(entity p_mon, float p_health, string p_model_path, vector p_mins, vector p_
     float p_allow_path_find, float p_combat_style, string p_netname, string p_killstring,
     float p_gib_health_thresh, string p_head_gib_model_path, string p_item_drop_field_name, float p_item_drop_amount) MC_Initialize_Monster =
 {
-    // ##Quedra: UNCONDITIONAL ENTRY DIAGNOSTIC
-    dprint("MC_Initialize_Monster: ENTRY for ", p_netname, ". Cvar 'developer': ", ftos(cvar("developer")), "\n");
+    // ##Quedra: CONDITIONAL ENTRY DIAGNOSTIC
+    if (cvar("developer") > 0 && mc_debug_prints_enabled == TRUE)
+    {
+        dprint("MC_Initialize_Monster: ENTRY for ", p_netname, ". Cvar 'developer': ", ftos(cvar("developer")), ", mc_debug_prints_enabled: ", ftos(mc_debug_prints_enabled), "\n");
+    }
 
     // ##FQXCUSTOM - ##Quedra: Basic Entity Setup
     p_mon.solid = p_solid_type;
@@ -67,7 +72,7 @@ void(entity p_mon, float p_health, string p_model_path, vector p_mins, vector p_
     if (p_mon.target != string_null) {
         p_mon.goalentity = p_mon.movetarget = find(world, targetname, p_mon.target);
         if (!p_mon.movetarget) {
-            dprint("MC_Initialize_Monster: Monster at ", vtos(p_mon.origin), " can't find target: ", p_mon.target, "\n");
+            if (cvar("developer") > 0 && mc_debug_prints_enabled == TRUE) dprint("MC_Initialize_Monster: Monster at ", vtos(p_mon.origin), " can't find target: ", p_mon.target, "\n");
             p_mon.pausetime = time + p_pausetime_if_no_target;
             if (p_pausetime_if_no_target == 0) { p_mon.pausetime = time + 99999999; }
             p_mon.think = p_initial_think_func;
@@ -86,48 +91,47 @@ void(entity p_mon, float p_health, string p_model_path, vector p_mins, vector p_
         p_mon.think = p_initial_think_func;
     }
 
-    if(cvar("developer") > 0) {
+    if(cvar("developer") > 0 && mc_debug_prints_enabled == TRUE) {
         dprint(p_mon.netname, " MC_Init: PRE-GROUNDING CHECK. MOVETYPE_STEP=", ftos(MOVETYPE_STEP), ", p_mon.movetype=", ftos(p_mon.movetype), "\n");
         dprint(p_mon.netname, " MC_Init: PRE-GROUNDING CHECK. FL_SWIM=", ftos(FL_SWIM), ", p_mon.flags & FL_SWIM=", ftos(p_mon.flags & FL_SWIM), "\n");
     }
 
     if (p_mon.movetype == MOVETYPE_STEP && !(p_mon.flags & FL_SWIM) ) {
-        if(cvar("developer") > 0) dprint(p_mon.netname, " MC_Init: ENTERING grounding logic block.\n");
+        if(cvar("developer") > 0 && mc_debug_prints_enabled == TRUE) dprint(p_mon.netname, " MC_Init: ENTERING grounding logic block.\n");
         p_mon.origin_z = p_mon.origin_z + 1; 
         droptofloor();
         
         if (p_mon.groundentity != world) {
             p_mon.flags = p_mon.flags | FL_ONGROUND;
-             if(cvar("developer") > 0) dprint(p_mon.netname, " MC_Init: After droptofloor(), GroundEnt was valid. Forced FL_ONGROUND.\n");
+             if(cvar("developer") > 0 && mc_debug_prints_enabled == TRUE) dprint(p_mon.netname, " MC_Init: After droptofloor(), GroundEnt was valid. Forced FL_ONGROUND.\n");
         } else {
-            p_mon.flags = p_mon.flags - (p_mon.flags & FL_ONGROUND); 
-            if(cvar("developer") > 0) dprint(p_mon.netname, " MC_Init: After droptofloor(), GroundEnt is world. Cleared FL_ONGROUND.\n");
+            p_mon.flags = p_mon.flags - (p_mon.flags & FL_ONGROUND);
+            if(cvar("developer") > 0 && mc_debug_prints_enabled == TRUE) dprint(p_mon.netname, " MC_Init: After droptofloor(), GroundEnt is world. Cleared FL_ONGROUND.\n");
         }
 
-        if(cvar("developer") > 0) { // ##Quedra: Segmented dprint
+        if(cvar("developer") > 0 && mc_debug_prints_enabled == TRUE) { // ##Quedra: Segmented dprint
             dprint(p_mon.netname, " MC_Init: State Bf_walkmove(0,0) GE: ", p_mon.groundentity.netname, " (valid: ", ftos(p_mon.groundentity != world), ")\n");
             dprint(p_mon.netname, " MC_Init: State Bf_walkmove(0,0) FL_ONGROUND: ", ftos(p_mon.flags & FL_ONGROUND), "\n");
         }
         
         if (!walkmove(0, 0)) { 
-            dprint("MC_Initialize_Monster: Monster ", p_mon.netname," stuck in wall at: ", vtos(p_mon.origin), " (after initial walkmove(0,0) check)\n");
+            if (cvar("developer") > 0) dprint("MC_Initialize_Monster: Monster ", p_mon.netname," stuck in wall at: ", vtos(p_mon.origin), " (after initial walkmove(0,0) check)\n");
         }
 
-        if(cvar("developer") > 0) { // ##Quedra: Segmented dprint
+        if(cvar("developer") > 0 && mc_debug_prints_enabled == TRUE) { // ##Quedra: Segmented dprint
             dprint(p_mon.netname, " MC_Init: FINAL Ground State GE: ", p_mon.groundentity.netname, " (valid: ", ftos(p_mon.groundentity != world), ")\n");
             dprint(p_mon.netname, " MC_Init: FINAL Ground State FL_ONGROUND: ", ftos(p_mon.flags & FL_ONGROUND), "\n");
         }
     } else if (p_mon.flags & FL_FLY) { 
          if (!walkmove(0,0)) { 
-            dprint ("MC_Initialize_Monster: Flymonster ", p_mon.netname," stuck in wall at: ", vtos(p_mon.origin), "\n");
-        }
+            if (cvar("developer") > 0) dprint ("MC_Initialize_Monster: Flymonster ", p_mon.netname," stuck in wall at: ", vtos(p_mon.origin), "\n");
+         }
     } else {
-        if(cvar("developer") > 0) dprint(p_mon.netname, " MC_Init: SKIPPED grounding logic block. Movetype was not STEP or was SWIM.\n");
+        if(cvar("developer") > 0 && mc_debug_prints_enabled == TRUE) dprint(p_mon.netname, " MC_Init: SKIPPED grounding logic block. Movetype was not STEP or was SWIM.\n");
     }
 
     p_mon.ideal_yaw = p_mon.angles_y;
-    p_mon.nextthink = time + 0.1 + (random() * 0.2); 
-
+    p_mon.nextthink = time + 0.1 + (random() * 0.2);
     total_monsters = total_monsters + 1; 
 };
 
@@ -157,7 +161,6 @@ void(entity p_mon, entity p_attacker, float p_damage, void() p_pain_anim_func_pt
         p_mon.nextthink = time + 0.1;
     }
 };
-
 //============================================================================
 // ##Quedra: GENERIC DEATH HANDLING
 //============================================================================
@@ -234,4 +237,5 @@ void(entity p_mon, entity p_attacker, void() p_death_anim_func_ptr, string p_dea
 };
 //=============================================================================
 // mc_ops_states.qc - FQX Mod - Monster Core Operations: States - END
+// ##FQX - ##Quedra: Version 1.8.1
 //=============================================================================
