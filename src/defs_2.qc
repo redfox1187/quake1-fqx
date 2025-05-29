@@ -24,8 +24,9 @@ float AMMO_ID_CELLS = 4;
 float SHELL_TYPE_12G_000BUCK  = 1; 
 float SHELL_TYPE_12G_00BUCK   = 2; // ##Quedra: Added in v3.0.0
 float SHELL_TYPE_12G_0BUCK    = 3; // ##Quedra: Added in v3.0.0
+float SHELL_TYPE_12G_NO1BUCK = 5; // ##Fox: Just plopping this in right here.
 float SHELL_TYPE_12G_NO4BUCK  = 4; // ##Quedra: Added in v3.0.0
-float SHELL_TYPE_12G_BIRDSHOT = 5; // ##Quedra: Added in v3.0.0
+
 // ##Quedra: TODO_FQX - ##Soldier: Define any further SHELL_TYPE_* constants here as needed.
 
 // --- Weapon ID Constants ---

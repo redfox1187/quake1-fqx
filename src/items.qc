@@ -513,18 +513,21 @@ void() weapon_touch =
     bound_other_ammo(); // [cite: 68]
     self = store_self_for_bound; // Restore self to item
 
-	player_entity.items = player_entity.items | new_item_flag_for_slot; // [cite: 69] // Grant player the item flag for the weapon slot
+	player_entity.items = player_entity.items | new_item_flag_for_slot; // Grant player the item flag for the weapon slot
 	
     // ##FQXCUSTOM - ##Quedra: v1.1 - Removed automatic weapon switching logic.
     // ##FQXCUSTOM - ##Quedra: Player picks up the weapon, it's added to inventory. No forced switch.
     // ##FQXCUSTOM - ##Quedra: W_SetCurrentAmmo() will refresh HUD for the *currently held* weapon.
-    if (player_entity.weapon != 0) // If player has a weapon equipped
-    {
-        local entity current_self_context = self; // self is currently the item being touched
-        self = player_entity; // Switch context to player
-        W_SetCurrentAmmo(); // Update player's current weapon's HUD/ammo counts
-        self = current_self_context; // Restore context to the item
-    }
+	if (player_entity.weapon_is_reloading == FALSE)
+	{
+		if (player_entity.weapon != 0) 
+		{
+			local entity current_self_context = self;
+			self = player_entity;
+			W_SetCurrentAmmo();
+			self = current_self_context;
+		}
+	}
 
 	if (leave_item) // [cite: 70]
 		return; // [cite: 70]
@@ -670,12 +673,14 @@ void() ammo_touch =
     // ##FQXCUSTOM - ##Quedra: v1.1 - Removed automatic weapon switching logic.
     // ##FQXCUSTOM - ##Quedra: The block that called W_BestWeapon was here. [original lines 91-93]
 	
-    // ##FQXCUSTOM - ##Quedra: v1.1 - If player's current weapon's ammo was updated, refresh HUD.
-    // ##FQXCUSTOM - ##Quedra: Call W_SetCurrentAmmo in the player's context.
-    current_self_context_at = self; // Store current self (the item)
-    self = player_entity; // Set context to player
-	W_SetCurrentAmmo();   // Refresh player's current weapon state/HUD
-    self = current_self_context_at; // Restore self to item
+	// ##Quedra: MODIFICATION - Check reload state
+	if (player_entity.weapon_is_reloading == FALSE)
+	{
+		current_self_context_at = self;
+		self = player_entity;
+		W_SetCurrentAmmo();
+		self = current_self_context_at;
+	}
 
 	self.model = string_null; // [cite: 94]
 	self.solid = SOLID_NOT; // [cite: 94]
@@ -1297,16 +1302,14 @@ void() BackpackTouch =
 	sound (player_entity, CHAN_ITEM, "weapons/lock4.wav", 1, ATTN_NORM); // [cite: 171]
 	stuffcmd (player_entity, "bf\n"); // [cite: 171]
 
-	remove(self); // Remove the backpack item from world [cite: 171]
+   remove(self); // The backpack item removes itself
 
-    // ##FQXCUSTOM - ##Quedra: v1.1 - Removed automatic weapon switching logic.
-    // ##FQXCUSTOM - ##Quedra: Only refresh current weapon's HUD.
-    // ##FQXCUSTOM - ##Quedra: The original 'self = other;' and Deathmatch_Weapon call was here. [original line 172]
-    local entity store_self_item_context_bp; // ##Quedra: Temporary variable, self will be player
-    // store_self_item_context_bp = self; // 'self' is the backpack, which is now removed. No need to store.
-	self = player_entity; // Set context to player
-	W_SetCurrentAmmo ();  // Refresh player's current weapon state/HUD
-    // self = store_self_item_context_bp; // No need to restore self to the removed backpack
+    // ##Quedra: MODIFICATION - Check reload state (player_entity is 'other' from touch context)
+    if (player_entity.weapon_is_reloading == FALSE)
+    {
+	    self = player_entity; // Set context to player for W_SetCurrentAmmo
+	    W_SetCurrentAmmo (); 
+    }
 };
 
 /*

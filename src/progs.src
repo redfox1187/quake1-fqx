@@ -39,40 +39,40 @@ items.qc         // ##FQXCUSTOM - ##Quedra: Standard Quake item logic, with FQX 
 
 //=============================================================================
 // ##Quedra: PART 3 - GENERIC ADVANCED MUNITIONS (AM_*) CORE MODULES
-// ##Quedra: These are foundational for the new weapon mechanics. Path: weapons/ammo/
+// ##Quedra: These are foundational for the new weapon mechanics. Path: weapons/advanced_munitions/
 //=============================================================================
-weapons/ammo/am_recoil.qc       // ##FQX - ##Quedra: Recoil system. 
-weapons/ammo/am_operations.qc   // ##FQX - ##Quedra: Weapon state operations. Uses am_recoil. 
-weapons/ammo/am_ballistics.qc   // ##FQX - ##Quedra: Standard bullet projectile logic. 
+weapons/advanced_munitions/am_recoil.qc       // ##FQX - ##Quedra: Recoil system. 
+weapons/advanced_munitions/am_operations.qc   // ##FQX - ##Quedra: Weapon state operations. Uses am_recoil. 
+weapons/advanced_munitions/am_ballistics.qc   // ##FQX - ##Quedra: Standard bullet projectile logic. 
 
 //=============================================================================
 // ##Quedra: PART 4 - GENERIC FIRE MODE & RELOAD LOGIC
-// ##Quedra: Depends on am_recoil, am_operations, am_ballistics. Path: weapons/ammo/
+// ##Quedra: Depends on am_recoil, am_operations, am_ballistics. Path: weapons/advanced_munitions/
 //=============================================================================
-weapons/ammo/am_firemodes.qc    // ##FQX - ##Quedra: Defines parameterized fire functions. 
-weapons/ammo/am_reload.qc       // ##FQX - ##Quedra: Core weapon reload system logic (FQX v1.1). 
+weapons/advanced_munitions/am_firemodes.qc    // ##FQX - ##Quedra: Defines parameterized fire functions. 
+weapons/advanced_munitions/am_reload.qc       // ##FQX - ##Quedra: Core weapon reload system logic (FQX v1.1). 
 
 //=============================================================================
 // ##Quedra: PART 5 - SPECIALIZED AMMUNITION TYPE MODULES
-// ##Quedra: Path: weapons/ammo/
+// ##Quedra: Path: weapons/am/
 //=============================================================================
-weapons/ammo/am_buckshot.qc     // ##FQX - ##Quedra: Buckshot projectile logic (FQX v2.1diag). 
-weapons/ammo/am_nails.qc        // ##FQX - ##Quedra: Nail/Spike logic. 
-weapons/ammo/am_ebolt.qc	// ##FQX - ##Fox: Somehow this and the rahpm1 got reverted to an old version. Being re-introduced.
+weapons/advanced_munitions/am_buckshot.qc     // ##FQX - ##Quedra: Buckshot projectile logic (FQX v2.1diag). 
+weapons/advanced_munitions/am_nails.qc        // ##FQX - ##Quedra: Nail/Spike logic. 
+weapons/advanced_munitions/am_ebolt.qc	// ##FQX - ##Fox: Somehow this and the rahpm1 got reverted to an old version. Being re-introduced.
 
 //=============================================================================
 // ##Quedra: PART 6 - INDIVIDUAL WEAPON DATA SHEETS & DISPATCHERS (w_*.qc)
 // ##Quedra: These are new or heavily modified for FQX.
 //=============================================================================
-weapons/holdout/w_rahpm1.qc     // ##FQX       - ##Quedra: RAHP M1 (Holdout Slot). 
-weapons/holdout/w_m93r.qc       // ##FQX       - ##Quedra: M93R (Holdout Slot). 
+weapons/w_rahpm1.qc     // ##FQX       - ##Quedra: RAHP M1 (Holdout Slot). 
+weapons/w_m93r.qc       // ##FQX       - ##Quedra: M93R (Holdout Slot). 
 
-weapons/secondary/w_sawnoff.qc  // ##FQX       - ##Quedra: Sawn-off Shotgun (IT_SLOT_SECONDARY). NEW FQX v1.0diag.
-weapons/secondary/w_ump45.qc    // ##FQX       - ##Quedra: UMP45 (IT_SLOT_FLAG is IT_SLOT_PRIMARY in its file). 
+weapons/w_sawnoff.qc  // ##FQX       - ##Quedra: Sawn-off Shotgun (IT_SLOT_SECONDARY). NEW FQX v1.0diag.
+weapons/w_ump45.qc    // ##FQX       - ##Quedra: UMP45 (IT_SLOT_FLAG is IT_SLOT_PRIMARY in its file). 
 
-weapons/primary/w_izh-43.qc    // ##FQXCUSTOM - ##Fox: File renamed to deflect its proper designation - ##Quedra: DBShot (IT_SLOT_SECONDARY, Updated FQX v2.2). 
-weapons/primary/w_ak47.qc       // ##FQX       - ##Quedra: AK47 (IT_SLOT_HEAVY). 
-weapons/primary/w_q_snailgun.qc // ##FQXCUSTOM - ##Quedra: Quake Super Nailgun (Adapted). 
+weapons/w_izh-43.qc    // ##FQXCUSTOM - ##Fox: File renamed to deflect its proper designation - ##Quedra: DBShot (IT_SLOT_SECONDARY, Updated FQX v2.2). 
+weapons/w_ak47.qc       // ##FQX       - ##Quedra: AK47 (IT_SLOT_HEAVY). 
+weapons/w_q_snailgun.qc // ##FQXCUSTOM - ##Quedra: Quake Super Nailgun (Adapted). 
 
 //=============================================================================
 // ##Quedra: PART 7 - CORE GAMEPLAY LOGIC & ENTITY BEHAVIORS
