@@ -1,5 +1,6 @@
 //=============================================================================
 // w_izh-43.qc - FQX Mod - IZh-43 Double Barrel Shotgun
+// ##FQX - ##Fox: Version 2.5 - just sneaking in some tuning numbers for testing. Sorry 'Q'
 // ##FQXCUSTOM - ##Quedra: Version 2.4.0
 // ##Quedra: Formerly w_dbshot.qc. Renamed internal constants, functions,
 // ##Quedra: and display strings to IZh-43 as per Soldier's request.
@@ -29,7 +30,7 @@ float WEAPON_IZH43_AMMO_COST_SINGLE = 1;
 float WEAPON_IZH43_AMMO_COST_DOUBLE = 2;
 // --- Projectile & Damage (Primary: 000 Buck) ---
 float WEAPON_IZH43_SHELL_TYPE_PRIMARY = SHELL_TYPE_12G_000BUCK; 
-float WEAPON_IZH43_SPREAD_MOD_PRIMARY = 0.9; 
+float WEAPON_IZH43_SPREAD_MOD_PRIMARY = 0.16; 
 float WEAPON_IZH43_DAMAGE_MOD_PRIMARY = 1.0;
 // --- Cooldowns ---
 float WEAPON_IZH43_COOLDOWN_SINGLE = 0.8;  

@@ -6,8 +6,12 @@
 // ##Quedra: Integrated op_precache.qc, am_reload.qc, w_sawnoff.qc.
 //=============================================================================
 
+
+
 // ##Quedra: Target output file for the compiled game logic.
 ../progs.dat
+
+#pragma TARGET ID // ##FQX - ##Fox: Establishing a clear target for better understanding when working with FTEQCC. This line should follow '../progs.dat', otherwise it will cause compiler errors.
 
 //=============================================================================
 // ##Quedra: PART 1 - CORE DEFINITIONS (Absolutely First)
