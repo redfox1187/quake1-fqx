@@ -354,8 +354,8 @@ WEAPONS
 
 void() bound_other_ammo =
 {
-	if (other.ammo_shells > 100) // [cite: 47]
-		other.ammo_shells = 100; // [cite: 47]
+	if (other.ammo_shells > 300) // [cite: 47]
+		other.ammo_shells = 300; // [cite: 47]
 	if (other.ammo_nails > 200) // [cite: 48]
 		other.ammo_nails = 200; // [cite: 48]
 
@@ -477,7 +477,7 @@ void() weapon_touch =
 		if (leave_item && (player_entity.items & IT_SLOT_SECONDARY) ) // [cite: 62]
 			return; // [cite: 62]
 		new_item_flag_for_slot = IT_SLOT_SECONDARY; // [cite: 63]
-		player_entity.ammo_shells = player_entity.ammo_shells + 5; // [cite: 63]
+		player_entity.ammo_shells = player_entity.ammo_shells + 15; // [cite: 63]
 	}
 	else if (self.classname == "weapon_rocketlauncher") // [cite: 64]
 	{
@@ -634,7 +634,7 @@ void() ammo_touch =
 // shotgun
 	if (self.weapon == 1) // [cite: 87] // Corresponds to shells
 	{
-		if (player_entity.ammo_shells >= 100) // [cite: 87]
+		if (player_entity.ammo_shells >= 300) // [cite: 87]
 			return; // [cite: 87]
 		player_entity.ammo_shells = player_entity.ammo_shells + self.aflag; // [cite: 88]
 	}
@@ -1243,7 +1243,7 @@ void() BackpackTouch =
 	else if ((r + player_entity.loot_bonus)<15) // [cite: 160]
 		{
 		//Tier 1 ammo [cite: 160]
-		self.ammo_shells = 5; // [cite: 160]
+		self.ammo_shells = 15; // [cite: 160]
 		self.ammo_nails = 15; // [cite: 161]
 		self.ammo_rockets = 1; // [cite: 161]
 		self.ammo_cells = 15; // [cite: 161]
@@ -1252,7 +1252,7 @@ void() BackpackTouch =
 	else if ((r + player_entity.loot_bonus)<20) // [cite: 162]
 		{
 		//Tier 2 ammo [cite: 162]
-		self.ammo_shells = 10; // [cite: 162]
+		self.ammo_shells = 30; // [cite: 162]
 		self.ammo_nails = 25; // [cite: 162]
 		self.ammo_rockets = 10; // [cite: 162]
 		self.ammo_cells = 25; // [cite: 162]
@@ -1261,7 +1261,7 @@ void() BackpackTouch =
 	else // [cite: 163]
 		{
 		//Best Tier ammo [cite: 163]
-		self.ammo_shells = 50; // [cite: 163]
+		self.ammo_shells = 150; // [cite: 163]
 		self.ammo_nails = 100; // [cite: 163]
 		self.ammo_rockets = 50; // [cite: 163]
 		self.ammo_cells = 100; // [cite: 163]
@@ -1345,8 +1345,8 @@ void() DropBackpack =
 	item.ammo_cells = self.ammo_cells; // [cite: 180]
 
 	// include some ammo in the backpack if the weapon is being given [cite: 180]
-	if (item.ammo_shells < 5 && (item.items == IT_SLOT_HOLDOUT || item.items == IT_SLOT_SECONDARY)) { // [cite: 180]
-		item.ammo_shells = 5; // [cite: 180]
+	if (item.ammo_shells < 15 && (item.items == IT_SLOT_HOLDOUT || item.items == IT_SLOT_SECONDARY)) { // [cite: 180]
+		item.ammo_shells = 15; // [cite: 180]
 	}
 
 	if (item.ammo_nails < 20 && (item.items == IT_SLOT_PRIMARY || item.items == IT_SLOT_HEAVY)) { // [cite: 181]

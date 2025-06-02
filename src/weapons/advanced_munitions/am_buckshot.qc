@@ -1,12 +1,16 @@
 //=============================================================================
 // am_buckshot.qc - FQX Mod - Advanced Buckshot Ammunition System
 // Location: weapons/ammo/
-// ##FQX - ##Quedra: Version 2.5.0
+// ##FQX - ##Quedra: Version 2.6.0
 // ##Quedra: Implements dual-cone spread logic for buckshot projectiles.
 // ##Quedra: Dependencies: Uses SHELL_TYPE_* constants from defs_2.qc v3.0.0+.
 // ##Quedra:             Requires defs_2.qc get_buckshot_properties fwd-decl to be updated
 // ##Quedra:             for new signature using 'vector &p_dual_cone_data'.
-// ##Quedra:             Requires new SHELL_TYPE_12G_NO1BUCK constant in defs_2.qc.
+// ##Quedra:             Requires SHELL_TYPE_12G_NO1BUCK constant in defs_2.qc.
+// ##Quedra:             Requires forward declaration for GetShellResourceCost in defs_2.qc.
+// ##Quedra: v2.6.0 - Added GetShellResourceCost() function to define resource cost per shell type.
+// ##Quedra: v2.5.1 - ##Soldier: Integrated Sergeant Grave's recommended adjustments
+// ##Quedra:          for secondary buckshot properties (spread, core_ratio, armor_pen).
 // ##Quedra: v2.5.0 - ##Soldier: Rebalanced damage & pellet counts for all buckshot types
 // ##Quedra:          as per new systematic scaling.
 // ##Quedra:        - Added new SHELL_TYPE_12G_NO1BUCK with estimated secondary properties.
@@ -27,8 +31,27 @@ void launch_buckshot_pellet(vector p_origin, vector p_dir, float p_damage_this_p
 float BUCKSHOT_SPEED_BASE = 2000; // Base muzzle velocity for pellets
 
 //-----------------------------------------------------------------------------
+// ##Quedra: GetShellResourceCost (v2.6.0)
+// Desc: Returns the global Quake Shell resource cost to load 1 magazine
+//       round of the specified buckshot shell type.
+// Note: Requires forward declaration in defs_2.qc if called from other files.
+//-----------------------------------------------------------------------------
+float GetShellResourceCost(float shell_type_id)
+{
+    if (shell_type_id == SHELL_TYPE_12G_NO4BUCK) { return 1; }      // Power Level 1
+    else if (shell_type_id == SHELL_TYPE_12G_NO1BUCK) { return 2; } // Power Level 2
+    else if (shell_type_id == SHELL_TYPE_12G_0BUCK) { return 3; }   // Power Level 3
+    else if (shell_type_id == SHELL_TYPE_12G_00BUCK) { return 4; }  // Power Level 4
+    else if (shell_type_id == SHELL_TYPE_12G_000BUCK) { return 5; } // Power Level 5
+    
+    // Fallback for unknown or non-costed shell types
+    dprint("GetShellResourceCost: Unknown or non-costed shell_type_id: "); dprint(ftos(shell_type_id)); dprint("\n");
+    return 1; // Default to a minimal cost to prevent gameplay stalls or errors
+}
+
+//-----------------------------------------------------------------------------
 // ##Quedra: get_buckshot_properties
-// ##Quedra: v2.5.0 - Rebalanced per Soldier's spec. Added NO1BUCK, removed BIRDSHOT.
+// ##Quedra: v2.5.1 - Integrated Sergeant Grave's secondary property adjustments.
 // ##Quedra: Expected forward declaration in defs_2.qc:
 // ##Quedra: void get_buckshot_properties(float p_shell_type_id, float &p_damage_per_pellet, float &p_pellet_count, vector &p_dual_cone_data, float &p_velocity_mod, float &p_knockback_factor, float &p_armor_pen_mod)
 //-----------------------------------------------------------------------------
@@ -45,21 +68,21 @@ void get_buckshot_properties(
     local float core_ratio, base_core_spread, base_fringe_spread; // Temporary locals
 
     // --- Defaults (Fallback) ---
-    p_damage_per_pellet         = 4;
-    p_pellet_count              = 10;
-    core_ratio                  = 0.6;
-    base_core_spread            = 0.015;
-    base_fringe_spread          = 0.08;
-    p_velocity_mod              = 1.0;
-    p_knockback_factor          = 0.8;
-    p_armor_pen_mod             = 0.6;
+    p_damage_per_pellet         = 4;    // Base damage per pellet (Soldier's rebalance sets this per type)
+    p_pellet_count              = 10;   // Base pellet count (Soldier's rebalance sets this per type)
+    core_ratio                  = 0.6;  // Default core pellet ratio
+    base_core_spread            = 0.015;// Default base core spread
+    base_fringe_spread          = 0.08; // Default base fringe spread
+    p_velocity_mod              = 1.0;  // Default velocity modifier
+    p_knockback_factor          = 0.8;  // Default knockback factor per pellet
+    p_armor_pen_mod             = 0.6;  // Default armor penetration modifier
 
     if (p_shell_type_id == SHELL_TYPE_12G_000BUCK) // Defined in defs_2.qc
     {
-        // v2.5.0 - Rebalanced by Soldier
-        p_damage_per_pellet         = 10.8; // Was 8
-        p_pellet_count              = 10;   // Was 8
-        // Unchanged secondary properties for now
+        // v2.5.0 Damage/Pellet Counts (Locked per Sarge)
+        p_damage_per_pellet         = 10.8;
+        p_pellet_count              = 10;
+        // v2.5.1 Secondary Properties (Confirmed by Sarge)
         core_ratio                  = 0.75;
         base_core_spread            = 0.010;
         base_fringe_spread          = 0.040;
@@ -69,10 +92,10 @@ void get_buckshot_properties(
     }
     else if (p_shell_type_id == SHELL_TYPE_12G_00BUCK) // Defined in defs_2.qc
     {
-        // v2.5.0 - Rebalanced by Soldier
-        p_damage_per_pellet         = 4.8;  // Was 7
-        p_pellet_count              = 15;   // Was 9
-        // Unchanged secondary properties for now
+        // v2.5.0 Damage/Pellet Counts (Locked per Sarge)
+        p_damage_per_pellet         = 4.8;
+        p_pellet_count              = 15;
+        // v2.5.1 Secondary Properties (Confirmed by Sarge, no changes from v2.5.0 values for this type)
         core_ratio                  = 0.66;
         base_core_spread            = 0.012;
         base_fringe_spread          = 0.045;
@@ -82,43 +105,43 @@ void get_buckshot_properties(
     }
     else if (p_shell_type_id == SHELL_TYPE_12G_0BUCK) // Defined in defs_2.qc
     {
-        // v2.5.0 - Rebalanced by Soldier (Baseline)
-        p_damage_per_pellet         = 2.0;  // Was 6
-        p_pellet_count              = 18;   // Was 12
-        // Unchanged secondary properties for now
-        core_ratio                  = 0.66;
-        base_core_spread            = 0.015;
-        base_fringe_spread          = 0.055;
-        p_velocity_mod              = 1.0;
-        p_knockback_factor          = 0.9;
-        p_armor_pen_mod             = 0.7;
+        // v2.5.0 Damage/Pellet Counts (Locked per Sarge)
+        p_damage_per_pellet         = 2.0;
+        p_pellet_count              = 18;
+        // v2.5.1 Secondary Properties (Adjusted by Sarge)
+        core_ratio                  = 0.60; // Was 0.66 in v2.5.0
+        base_core_spread            = 0.015; // Confirmed
+        base_fringe_spread          = 0.055; // Confirmed
+        p_velocity_mod              = 1.0;   // Confirmed
+        p_knockback_factor          = 0.9;   // Confirmed
+        p_armor_pen_mod             = 0.7;   // Confirmed
     }
-    // v2.5.0 - New shell type added by Soldier
     else if (p_shell_type_id == SHELL_TYPE_12G_NO1BUCK) // Ensure this constant is defined in defs_2.qc
     {
-        // ##Quedra: TODO_FQX - ##Soldier: Review secondary properties (spread, knockback, etc.) for NO1BUCK. Using defaults for now.
+        // v2.5.0 Damage/Pellet Counts (Locked per Sarge)
         p_damage_per_pellet         = 0.75;
         p_pellet_count              = 24;
-        // Using fallback defaults for other properties as per Soldier's instruction
-        core_ratio                  = 0.6;
-        base_core_spread            = 0.015;
-        base_fringe_spread          = 0.08;
-        p_velocity_mod              = 1.0;
-        p_knockback_factor          = 0.8;
-        p_armor_pen_mod             = 0.6;
+        // v2.5.1 Secondary Properties (Adjusted by Sarge from v2.5.0 defaults)
+        // ##Quedra: TODO_FQX - ##Soldier: Review secondary properties (spread, knockback, etc.) for NO1BUCK. Using defaults for now. (Original comment retained)
+        core_ratio                  = 0.55;  // Was 0.6 (default)
+        base_core_spread            = 0.018; // Was 0.015 (default)
+        base_fringe_spread          = 0.080; // Confirmed (default)
+        p_velocity_mod              = 1.0;   // Confirmed (default)
+        p_knockback_factor          = 0.8;   // Confirmed (default)
+        p_armor_pen_mod             = 0.6;   // Confirmed (default)
     }
     else if (p_shell_type_id == SHELL_TYPE_12G_NO4BUCK) // Defined in defs_2.qc
     {
-        // v2.5.0 - Rebalanced by Soldier
-        p_damage_per_pellet         = 0.219512; // Was 3 (~9 total / 41 pellets)
-        p_pellet_count              = 41;       // Was 27
-        // Unchanged secondary properties for now
-        core_ratio                  = 0.60;
-        base_core_spread            = 0.020;
-        base_fringe_spread          = 0.070;
-        p_velocity_mod              = 1.0;
-        p_knockback_factor          = 0.7;
-        p_armor_pen_mod             = 0.65;
+        // v2.5.0 Damage/Pellet Counts (Locked per Sarge)
+        p_damage_per_pellet         = 0.219512;
+        p_pellet_count              = 41;
+        // v2.5.1 Secondary Properties (Adjusted by Sarge)
+        core_ratio                  = 0.50;  // Was 0.60 in v2.5.0
+        base_core_spread            = 0.020; // Confirmed
+        base_fringe_spread          = 0.100; // Was 0.070 in v2.5.0
+        p_velocity_mod              = 1.0;   // Confirmed
+        p_knockback_factor          = 0.7;   // Confirmed
+        p_armor_pen_mod             = 0.55;  // Was 0.65 in v2.5.0
     }
     // v2.5.0 - SHELL_TYPE_12G_BIRDSHOT block removed as per Soldier's request.
 
@@ -293,5 +316,5 @@ void W_am_fire_buckshot_parameterized(
 
 //=============================================================================
 // am_buckshot.qc - FQX Mod - Advanced Buckshot Ammunition System - END
-// ##FQX - ##Quedra: Version 2.5.0
+// ##FQX - ##Quedra: Version 2.6.0
 //=============================================================================

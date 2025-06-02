@@ -146,7 +146,7 @@ void FQX_Precache_AllWeaponAssets()
 
     // ##FQX: Custom Weapon View Models
     precache_model ("progs/v_rahpm1.mdl");      // ##FQX [cite: 77]
-    precache_model ("progs/v_doublebarrel.mdl"); // ##FQX [cite: 77]
+    precache_model ("progs/v_izh-43.mdl"); // ##FQX [cite: 77]
     precache_model ("progs/v_sawnoff.mdl");     // ##FQX: Precaching new Sawn-off model [cite: 77]
     precache_model ("progs/v_ump45.mdl");       // ##FQX [cite: 78]
     precache_model ("progs/v_ak47.mdl");        // ##FQX [cite: 78]

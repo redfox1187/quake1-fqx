@@ -274,7 +274,7 @@ void() monster_army = //
         99999999, TRUE, CS_RANGED, // 
         "$qc_grunt", "$qc_ks_grunt", // 
         -35, "progs/h_guard.mdl", // 
-        "ammo_shells", 5 // 
+        "ammo_shells", 15 // 
     );
     MC_Mon_InitializeWeaponProfile( self, // 
         GRUNT_M93R_WEAPON_ID,  // 
