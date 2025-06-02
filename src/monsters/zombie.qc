@@ -153,6 +153,15 @@ if (random() > 0.8)
 
 ATTACKS
 
+##Fox: I want to overhaul this a bit. Change the ranged attack (as mentioned
+below,) but make that more of a last resort if the player is unapproachable.
+Primarily, the zombie should attempt to get within melee range. I think it
+would be a cool idea to make some random chances of movement speed, making
+them a bit unpredictable and scary. As they approach, they may randomly, 
+suddenly "sprint" towards the player, or be crippled and move slowly, (which
+might lead them to attempt a ranged attack if they have a reasonable LOS on 
+their target.)
+
 =============================================================================
 */
 
@@ -178,6 +187,14 @@ void() ZombieGrenadeTouch =
 /*
 ================
 ZombieFireGrenade
+
+##Fox: I don't like the vanilla iteration of this much. Maybe replace this 
+with a different ranged attack, like a fast, but weighted, (so it drops like a
+grenade,) projectile, with scrag effects. Perhaps using the scrag's same
+projectile model will do. A small burst of about a 4 unit radius for splash 
+damage that lingers for a quarter of a second or so will help sell this 
+effect. Also adding a poison affect would be ideal once that system gets 
+fleshed out.
 ================
 */
 void(vector st) ZombieFireGrenade =
@@ -435,21 +452,45 @@ fast pain frames.
 A hit of less than 10 points of damage (winged by a shotgun) will be ignored.
 
 FIXME: don't use pain_finished because of nightmare hack
+
+##Fox: I want to overhaul this in quite a few ways. More details and ideas 
+below, but I want these zombies to have a bit of a different feel when
+attacking them. FQX's weapons logic doesn't work well with this vanilla
+zombie, but we don't want to deviate too much. The zombies should still be
+effective in their old positions of vanilla Quake's maps, but with a bit 
+more of our FQX spice.
+I'm thinking a large health pool, (like 300-400) will set the basis for the zombie's 
+resolute defenses. The goal here is to make them still feel substantially
+'thick,' but can still be worked down with any type of weapon or damage.
+The reward in clever tactics comes by using select weapon types or 
+damage types (once implemented into FQX.) Explosives and 'flesh rending'
+attacks in particular should be particularly effective. Things like 
+buckshot, Hollow Point rounds, edged bladed weapons, explosives, and so on
+should have heavy multipliers, like times 10 or more. This would reflect the 
+nature of a zombie's lack of need for vital organs, and require essentially
+needing to shave its body into pieces. Damaging the flesh would feel far less
+effective than tearing it apart.
+
+Also the 'hitbox' of the zombie might need a look. It currently feels like
+they are immune when laying down, but this observed behavior might just be
+a percieved effect. The intention is to make sure they still can take damage
+even, (perhaps especially,) when they are prone.
+
 =================
 */
 void(entity attacker, float take) zombie_pain =
 {
 	local float r;
 
-	self.health = 60;		// allways reset health
+	self.health = 60;		// allways reset health ##Fox: Perhaps a thick health pool would be better, with certain weapon or damage types having massive multipliers.
 
 	if (take < 9)
-		return;				// totally ignore
+		return;				// totally ignore ##Fox: This effectively nullifies FQX's shotguns in this manner. Although the spirit of it should be preserved somehow.
 
 	if (self.inpain == 2)
 		return;			// down on ground, so don't reset any counters
 
-	// go down immediately if a big enough hit
+	// go down immediately if a big enough hit ##Fox: This is really just annoying. Perhaps make this useful by opening up weakness (perhaps effectively a 5x multiplier to the zombies incoming damage while it is 'prone,') to any damage if the zombie is on the floor. Perhaps a direct-to-prone affect from melee attacks, giving a tactical option to the player.
 	if (take >= 25)
 	{
 		self.inpain = 2;
@@ -491,6 +532,10 @@ void(entity attacker, float take) zombie_pain =
 /*QUAKED monster_zombie (1 0 0) (-16 -16 -24) (16 16 32) Crucified ambush
 
 If crucified, stick the bounding box 12 pixels back into a wall to look right.
+
+##Fox: A cool idea would be if they had a random chance to drop off the wall with 
+reduced health. Though care would likely need to be taken to ensure smooth count
+of monsters in level.
 */
 void() monster_zombie =
 {
