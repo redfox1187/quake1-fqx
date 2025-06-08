@@ -293,6 +293,9 @@ void W_FireSawnoff (void);
 void w_sawnoff_AnimateFireThink(void); // ##Quedra: v3.3.0 - Added for Sawn-off v1.6.0+ animation system
 void w_izh43_AnimateFireThink(void); // ##Quedra: For IZh-43 viewmodel animation
 
+// --- From: w_q_rl.qc ---
+void() w_q_rl_SetCurrentAmmo;
+void() W_FireRL;
 //-----------------------------------------------------------------------------
 // ##Quedra: FORWARD DECLARATIONS - OPERATIONAL SYSTEMS (op_*.qc files) & WEAPONS.QC HELPERS
 //-----------------------------------------------------------------------------

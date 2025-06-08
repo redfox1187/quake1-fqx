@@ -1,8 +1,6 @@
 //=============================================================================
 // gpe_client_3.qc - FQX Mod - PlayerPreThink Logic
 // Location: /src/
-// ##FQXCUSTOM - ##Quedra: Version 2.3.3
-// ##Fox: Purpose:Removed Loadout UI elements
 // ##FQXCUSTOM - ##Quedra: Version 2.3.2
 // ##Quedra: Purpose: Contains PlayerPreThink, including FQX impulse handling and UI refresh logic.
 // ##Quedra: Derived from client.qc v2.3.1 logic. Original header noted v2.2.
@@ -79,6 +77,35 @@ void() PlayerPreThink =
         self.impulse = 0; 
     }
     
+    // ##FQX - ##Quedra: START - Loadout UI Impulse Handling (v2.3.0 client.qc Addition) 
+    // ##Quedra: Impulse 30 is used to toggle the primary slot loadout UI. 
+    // ##Quedra: This should be bound by the player (e.g., bind x "impulse 30"). 
+    if (self.impulse == 30)  
+    {
+        // ##FQXDEBUG - ##Fox: Impulse 30 Detected 
+        dprint("PlayerPreThink (gpe_client_3.qc): Impulse 30 DETECTED. Calling LoadoutUI_Toggle.\n"); 
+        LoadoutUI_Toggle(self, IT_SLOT_PRIMARY); 
+        self.impulse = 0; // Consume the impulse 
+    }
+    // ##Quedra: If the UI is active, pass other impulses to its input handler. 
+    // ##Quedra: LoadoutUI_HandleInput will check self.impulse for selections (e.g., 1-5) and consume it. 
+    else if (self.loadout_ui_active == TRUE && self.impulse != 0)  
+    {
+        LoadoutUI_HandleInput(self); 
+        // ##Quedra: LoadoutUI_HandleInput is responsible for consuming self.impulse if used. 
+    }
+    // ##FQX - ##Quedra: END - Loadout UI Impulse Handling 
+
+    // ##FQX - ##Quedra: START - Loadout UI Display Refresh (v2.3.2 gpe_client_3.qc)
+    if (self.loadout_ui_active == TRUE)
+    {
+        // ##Quedra: This dprint might be very spammy once the UI is visible.
+        // ##FQXDEBUG - ##Fox:
+        dprint("PlayerPreThink (gpe_client_3.qc): UI active, REFRESHING LoadoutUI_Display.\n");
+        LoadoutUI_Display(self); 
+    }
+    // ##FQX - ##Quedra: END - Loadout UI Display Refresh
+    
     AM_RecoilThink(); // Process recoil recovery 
 
     // ##FQXCUSTOM - ##Quedra: v2.2 - Refined "out of ammo" check for FQX systems. 
@@ -126,5 +153,5 @@ void() PlayerPreThink =
 
 //=============================================================================
 // gpe_client_3.qc - FQX Mod - PlayerPreThink Logic - END
-// ##FQXCUSTOM - ##Fox: Version 2.3.3
+// ##FQXCUSTOM - ##Quedra: Version 2.3.2
 //=============================================================================

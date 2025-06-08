@@ -24,7 +24,7 @@ float  UMP45_CYCLIC_RPM         = 600;
 float  UMP45_NUM_STANDARD_MODES = 3;   // Mode 0: Single, Mode 1: Burst, Mode 2: Auto
                                         // Debug Mode will be index 3 if cvar("developer") > 0
 float  UMP45_BURST_SHOT_COUNT   = 3;
-float  UMP45_BURST_POST_DELAY   = 0.3; 
+float  UMP45_BURST_POST_DELAY   = 0.01; 
 float  UMP45_BURST_INNER_RPM    = 600; // RPM for shots *within* a burst
 
 // --- Handling, Ergonomics, Weight ---

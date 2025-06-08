@@ -1,6 +1,8 @@
 //=============================================================================
-// op_loadout.qc - FQX Mod - Weapon Loadout Configuration & UI
+// op_loadout.qc - FQX Mod - Weapon Loadout Configuration
 // Location: /src/
+// ##FQXCUSTOM - ##Fox: Version 1.4.30 
+// ##Fox: Purpose: Removed Loadout UI elements.
 // ##FQXCUSTOM - ##Quedra: Version 1.4.29
 // ##Quedra: Purpose: Handles weapon loadout configuration, persistence, and the selection UI.
 // ##Quedra: Dependencies: Uses WEAPON_ID_* and IT_SLOT_* from core defs (defs_2.qc/defs_3.qc).
@@ -8,7 +10,6 @@
 // ##Quedra: v1.4.29 - Corrected sprint call in LoadoutUI_ConfirmSelection to remove invalid PRINT_HIGH argument.
 // ##Quedra: v1.4.28 - Corrected sprint calls in LoadoutUI_Display to remove invalid PRINT_HIGH argument.
 // ##Quedra: v1.4.27 - Corrected erroneous sprint call in LoadoutUI_Toggle's deactivation block to use centerprint("", player);
-// ##Quedra: v1.4.26 - LoadoutUI_Display: Replaced centerprint calls with sprint(PRINT_HIGH, ...) for testing visibility.
 //=============================================================================
 
 //=============================================================================
@@ -20,17 +21,22 @@
 Loadout_SetDefaults
 ====================
 */
-void Loadout_SetDefaults(entity player)
-{
-    player.loadout_id_melee     = WEAPON_ID_AXE;
-    player.loadout_id_holdout   = WEAPON_ID_M93R;
-    player.loadout_id_secondary = WEAPON_ID_SAWNOFF;
-    player.loadout_id_primary   = WEAPON_ID_IZH43;
-    player.loadout_id_heavy     = WEAPON_ID_AK47;
-    player.loadout_id_utility   = WEAPON_ID_GRAPPLE;
-    player.loadout_id_aux1      = WEAPON_ID_RL;
-    player.loadout_id_aux2      = WEAPON_ID_LG;
-    player.loadout_id_aux3      = WEAPON_ID_NONE;
+// ##FQXCUSTOM - ##Quedra: Setting default loadout for playable test
+void Loadout_SetDefaults(entity player) {
+    player.loadout_id_melee = WEAPON_ID_AXE;          // Slot 1 (Usually IT_SLOT_MELEE)
+    player.loadout_id_holdout = WEAPON_ID_RAHPM1;       // Slot 2 (Usually IT_SLOT_HOLDOUT)
+    player.loadout_id_secondary = WEAPON_ID_IZH43;      // Slot 3 (Usually IT_SLOT_SECONDARY)
+    player.loadout_id_primary = WEAPON_ID_UMP45;        // Slot 4 (Usually IT_SLOT_PRIMARY)
+    player.loadout_id_heavy = WEAPON_ID_AK47;        // Slot 5 (Usually IT_SLOT_HEAVY1)
+    player.loadout_id_utility = WEAPON_ID_RL;            // Slot 6 (Usually IT_SLOT_HEAVY2)
+    player.loadout_id_aux2 = WEAPON_ID_NONE;       // Slot 7 (Usually IT_SLOT_UTILITY)
+    player.loadout_id_aux2 = WEAPON_ID_NONE;          // Slot 8 (Usually IT_SLOT_AUX1)
+    player.loadout_id_aux3 = WEAPON_ID_NONE;          // Slot 9 (Usually IT_SLOT_AUX2) // TDD refers to IT_SLOT_AUX3, ensure field names match defs_2.qc
+
+    // ##Quedra: If FQX has a function to force save/apply these immediately after setting, call it here.
+    // ##Quedra: Otherwise, these will apply on next map load or player spawn that calls SetDefaults.
+    // ##Quedra: Consider if Loadout_EncodeParms() needs to be called if this is for an existing save.
+    // ##Quedra: For a quick test, this should suffice for new player spawns.
 }
 
 /*
@@ -162,225 +168,8 @@ float FQX_GetWeaponSlotEligibility(float weapon_id)
     return 0; 
 }
 
-//-----------------------------------------------------------------------------
-// ##FQX - ##Quedra: Loadout UI - Helper Functions
-//-----------------------------------------------------------------------------
-string GetSlotNameFromFlag(float slot_flag)
-{
-    if (slot_flag == IT_SLOT_PRIMARY)       { return "Primary Slot"; }
-    if (slot_flag == IT_SLOT_SECONDARY)     { return "Secondary Slot"; }
-    if (slot_flag == IT_SLOT_HEAVY)         { return "Heavy Slot"; }
-    if (slot_flag == IT_SLOT_HOLDOUT)       { return "Holdout Slot"; }
-    if (slot_flag == IT_SLOT_MELEE)         { return "Melee Slot"; }
-    if (slot_flag == IT_SLOT_UTILITY)       { return "Utility Slot"; }
-    if (slot_flag == IT_SLOT_AUX1)          { return "Auxiliary Slot 1"; }
-    if (slot_flag == IT_SLOT_AUX2)          { return "Auxiliary Slot 2"; }
-    if (slot_flag == IT_SLOT_AUX3)          { return "Auxiliary Slot 3"; }
-    
-    dprint("##Quedra GetSlotNameFromFlag: Warning - Unknown slot_flag: ");
-    dprint(ftos(slot_flag));
-    dprint("\n");
-    return "Unknown Slot";
-}
-
-//-----------------------------------------------------------------------------
-// ##FQX - ##Quedra: Loadout UI - Core Logic
-//-----------------------------------------------------------------------------
-
-void LoadoutUI_Toggle(entity player, float target_slot_flag)
-{
-    dprint("!!!! LoadoutUI_Toggle: FULL LOGIC v1.4.29 DIAGNOSTIC ENTERED !!!!\n"); 
-
-    if (!player) 
-    { 
-        dprint("LoadoutUI_Toggle (v1.4.29): FATAL - player entity IS NULL ON ENTRY!\n"); 
-        return; 
-    }
-    
-    dprint(strcat("LoadoutUI_Toggle (v1.4.29 Info): TSF: ", ftos(target_slot_flag), ", Initial .loadout_ui_active: ", ftos(player.loadout_ui_active), "\n"));
-    dprint("LoadoutUI_Toggle (v1.4.29): Pre-logic dprints complete. Evaluating deactivation block...\n");
-
-    if (player.loadout_ui_active == TRUE && 
-        (player.loadout_ui_target_slot_flag == target_slot_flag || target_slot_flag == 0))
-    {
-        dprint("LoadoutUI_Toggle (v1.4.29): Deactivation block ENTERED.\n");
-        player.loadout_ui_active = FALSE;
-        player.loadout_ui_target_slot_flag = 0;
-        player.loadout_ui_item_count = 0;
-        centerprint(player, ""); // ##Quedra: Correct way to clear centerprint
-        dprint("LoadoutUI_Toggle (v1.4.29): Deactivation COMPLETE. Returning.\n");
-        return;
-    }
-    dprint("LoadoutUI_Toggle (v1.4.29): Deactivation block SKIPPED. Evaluating activation block...\n");
-
-    if (target_slot_flag != 0) 
-    {
-        dprint("LoadoutUI_Toggle (v1.4.29): Activation block (target_slot_flag != 0) ENTERED.\n");
-        dprint(strcat("LoadoutUI_Toggle (v1.4.29): Activating. .loadout_ui_active (was ", ftos(player.loadout_ui_active), ") will be TRUE.\n"));
-        player.loadout_ui_active = TRUE; 
-        player.loadout_ui_target_slot_flag = target_slot_flag;
-        
-        if (!player) 
-        {
-            dprint("LoadoutUI_Toggle (v1.4.29): FATAL - player IS NULL before LoadoutUI_Display!\n");
-            return; 
-        }
-        dprint("LoadoutUI_Toggle (v1.4.29): Valid player. Attempting LoadoutUI_Display.\n"); 
-        LoadoutUI_Display(player);
-    }
-    else 
-    {
-        dprint("LoadoutUI_Toggle (v1.4.29): Activation ELSE block (target_slot_flag == 0 and UI wasn't already active) ENTERED.\n"); 
-        local string s_loadout_active_value_str; 
-        s_loadout_active_value_str = ftos(player.loadout_ui_active);
-        dprint(strcat("LoadoutUI_Toggle (v1.4.29): .loadout_ui_active was: ", s_loadout_active_value_str, ". No action taken for activation.\n"));
-    }
-    dprint("LoadoutUI_Toggle (v1.4.29): Function END.\n");
-}
-
-// ##FQX - ##Quedra: v1.4.28 - LoadoutUI_Display: Corrected sprint calls
-void LoadoutUI_Display(entity player)
-{
-    dprint("!!!! LoadoutUI_Display: v1.4.28 LOGIC ENTERED (sprint test)!!!!\n"); // ##Quedra: Keeping v1.4.28 in dprint for consistency with the sprint test logic within
-
-    if (!player)
-    {
-        dprint("LoadoutUI_Display (v1.4.28): ERROR - player entity IS NULL ON ENTRY!\n");
-        return;
-    }
-    if (player.netname != string_null && player.netname != "") { dprint(player.netname); dprint(" is valid player (v1.4.28).\n"); } else {dprint ("Player name not available (v1.4.28).\n");}
-
-    if (player.loadout_ui_active == FALSE)
-    {
-        dprint("LoadoutUI_Display (v1.4.28): UI not active. Returning early.\n");
-        return; 
-    }
-    dprint("LoadoutUI_Display (v1.4.28): UI is active. Proceeding.\n");
-    
-    local string display_str; 
-    local string temp_weapon_name;
-    local float current_weapon_id;
-    local float is_eligible_mask;
-    local float list_idx;
-    local string slot_name_str;
-    dprint("LoadoutUI_Display (v1.4.28): Local variables declared.\n");
-
-    player.loadout_ui_item_count = 0;
-    player.loadout_ui_item_id_1 = WEAPON_ID_NONE; 
-    player.loadout_ui_item_id_2 = WEAPON_ID_NONE;
-    player.loadout_ui_item_id_3 = WEAPON_ID_NONE;
-    player.loadout_ui_item_id_4 = WEAPON_ID_NONE;
-    player.loadout_ui_item_id_5 = WEAPON_ID_NONE;
-    list_idx = 0;
-    dprint("LoadoutUI_Display (v1.4.28): Player UI fields initialized.\n");
-
-    slot_name_str = GetSlotNameFromFlag(player.loadout_ui_target_slot_flag);
-    dprint(strcat("LoadoutUI_Display (v1.4.28): Got slot name: '", slot_name_str, "'. Building header string...\n"));
-    
-    display_str = strcat("Select Weapon for ", slot_name_str, " (", player.netname, "):\n");
-    display_str = strcat(display_str, "----------------------------------\n");
-    dprint("LoadoutUI_Display (v1.4.28): Header string built.\n");
-
-    dprint("LoadoutUI_Display (v1.4.28): Starting weapon processing sequence...\n");
-
-    // Simplified dprints within weapon processing
-    dprint("LoadoutUI_Display (v1.4.28): Processing UMP45...\n");
-    if (list_idx < 5) { current_weapon_id = WEAPON_ID_UMP45; is_eligible_mask = FQX_GetWeaponSlotEligibility(current_weapon_id); if (is_eligible_mask & player.loadout_ui_target_slot_flag) { list_idx = list_idx + 1; player.loadout_ui_item_count = list_idx; if (list_idx == 1) player.loadout_ui_item_id_1 = current_weapon_id; else if (list_idx == 2) player.loadout_ui_item_id_2 = current_weapon_id; else if (list_idx == 3) player.loadout_ui_item_id_3 = current_weapon_id; else if (list_idx == 4) player.loadout_ui_item_id_4 = current_weapon_id; else if (list_idx == 5) player.loadout_ui_item_id_5 = current_weapon_id; temp_weapon_name = FQX_GetWeaponDisplayName(current_weapon_id); display_str = strcat(display_str, ftos(list_idx), ". ", temp_weapon_name, "\n"); } }
-    dprint("LoadoutUI_Display (v1.4.28): Processing AK47...\n");
-    if (list_idx < 5) { current_weapon_id = WEAPON_ID_AK47; is_eligible_mask = FQX_GetWeaponSlotEligibility(current_weapon_id); if (is_eligible_mask & player.loadout_ui_target_slot_flag) { list_idx = list_idx + 1; player.loadout_ui_item_count = list_idx; if (list_idx == 1) player.loadout_ui_item_id_1 = current_weapon_id; else if (list_idx == 2) player.loadout_ui_item_id_2 = current_weapon_id; else if (list_idx == 3) player.loadout_ui_item_id_3 = current_weapon_id; else if (list_idx == 4) player.loadout_ui_item_id_4 = current_weapon_id; else if (list_idx == 5) player.loadout_ui_item_id_5 = current_weapon_id; temp_weapon_name = FQX_GetWeaponDisplayName(current_weapon_id); display_str = strcat(display_str, ftos(list_idx), ". ", temp_weapon_name, "\n"); } }
-    dprint("LoadoutUI_Display (v1.4.28): Processing IZH43...\n");
-    if (list_idx < 5) { current_weapon_id = WEAPON_ID_IZH43; is_eligible_mask = FQX_GetWeaponSlotEligibility(current_weapon_id); if (is_eligible_mask & player.loadout_ui_target_slot_flag) { list_idx = list_idx + 1; player.loadout_ui_item_count = list_idx; if (list_idx == 1) player.loadout_ui_item_id_1 = current_weapon_id; else if (list_idx == 2) player.loadout_ui_item_id_2 = current_weapon_id; else if (list_idx == 3) player.loadout_ui_item_id_3 = current_weapon_id; else if (list_idx == 4) player.loadout_ui_item_id_4 = current_weapon_id; else if (list_idx == 5) player.loadout_ui_item_id_5 = current_weapon_id; temp_weapon_name = FQX_GetWeaponDisplayName(current_weapon_id); display_str = strcat(display_str, ftos(list_idx), ". ", temp_weapon_name, "\n"); } }
-    dprint("LoadoutUI_Display (v1.4.28): Processing RAHPM1...\n");
-    if (list_idx < 5) { current_weapon_id = WEAPON_ID_RAHPM1; is_eligible_mask = FQX_GetWeaponSlotEligibility(current_weapon_id); if (is_eligible_mask & player.loadout_ui_target_slot_flag) { list_idx = list_idx + 1; player.loadout_ui_item_count = list_idx; if (list_idx == 1) player.loadout_ui_item_id_1 = current_weapon_id; else if (list_idx == 2) player.loadout_ui_item_id_2 = current_weapon_id; else if (list_idx == 3) player.loadout_ui_item_id_3 = current_weapon_id; else if (list_idx == 4) player.loadout_ui_item_id_4 = current_weapon_id; else if (list_idx == 5) player.loadout_ui_item_id_5 = current_weapon_id; temp_weapon_name = FQX_GetWeaponDisplayName(current_weapon_id); display_str = strcat(display_str, ftos(list_idx), ". ", temp_weapon_name, "\n"); } }
-    dprint("LoadoutUI_Display (v1.4.28): Processing SAWNOFF...\n");
-    if (list_idx < 5) { current_weapon_id = WEAPON_ID_SAWNOFF; is_eligible_mask = FQX_GetWeaponSlotEligibility(current_weapon_id); if (is_eligible_mask & player.loadout_ui_target_slot_flag) { list_idx = list_idx + 1; player.loadout_ui_item_count = list_idx; if (list_idx == 1) player.loadout_ui_item_id_1 = current_weapon_id; else if (list_idx == 2) player.loadout_ui_item_id_2 = current_weapon_id; else if (list_idx == 3) player.loadout_ui_item_id_3 = current_weapon_id; else if (list_idx == 4) player.loadout_ui_item_id_4 = current_weapon_id; else if (list_idx == 5) player.loadout_ui_item_id_5 = current_weapon_id; temp_weapon_name = FQX_GetWeaponDisplayName(current_weapon_id); display_str = strcat(display_str, ftos(list_idx), ". ", temp_weapon_name, "\n"); } }
-    dprint("LoadoutUI_Display (v1.4.28): Processing M93R...\n");
-    if (list_idx < 5) { current_weapon_id = WEAPON_ID_M93R; is_eligible_mask = FQX_GetWeaponSlotEligibility(current_weapon_id); if (is_eligible_mask & player.loadout_ui_target_slot_flag) { list_idx = list_idx + 1; player.loadout_ui_item_count = list_idx; if (list_idx == 1) player.loadout_ui_item_id_1 = current_weapon_id; else if (list_idx == 2) player.loadout_ui_item_id_2 = current_weapon_id; else if (list_idx == 3) player.loadout_ui_item_id_3 = current_weapon_id; else if (list_idx == 4) player.loadout_ui_item_id_4 = current_weapon_id; else if (list_idx == 5) player.loadout_ui_item_id_5 = current_weapon_id; temp_weapon_name = FQX_GetWeaponDisplayName(current_weapon_id); display_str = strcat(display_str, ftos(list_idx), ". ", temp_weapon_name, "\n"); } }
-
-    if (player.loadout_ui_item_count == 0)
-    {
-        display_str = strcat(display_str, "No eligible weapons for this slot.\n");
-    }
-    dprint("LoadoutUI_Display (v1.4.28): Finished weapon processing. Building footer.\n");
-    
-    display_str = strcat(display_str, "----------------------------------\n");
-    display_str = strcat(display_str, "Enter # to select, or UI key to close.\n");
-    dprint("LoadoutUI_Display (v1.4.28): Footer appended. display_str fully built.\n");
-    
-    dprint("LoadoutUI_Display (v1.4.28): Attempting SANITY sprint BEFORE actual UI sprint.\n");
-    sprint(player, "SPRINT SANITY (v1.4.28)\n"); // Corrected
-    dprint("LoadoutUI_Display (v1.4.28): SANITY sprint executed. Now attempting actual UI sprint.\n");
-        
-    sprint(player, strcat("SPRINT UI for: ", GetSlotNameFromFlag(player.loadout_ui_target_slot_flag), "\n")); // Corrected
-    dprint("LoadoutUI_Display (v1.4.28): Actual UI sprint called. Function END.\n");
-}
-
-//-----------------------------------------------------------------------------
-// ##FQX - ##Quedra: Loadout UI - Input & Confirmation Logic
-//-----------------------------------------------------------------------------
-
-void LoadoutUI_HandleInput(entity player)
-{
-    local float selection_impulse;
-    local float selected_weapon_id;
-
-    if (player.loadout_ui_active == FALSE)
-    {
-        return; 
-    }
-
-    selection_impulse = player.impulse;
-    if (selection_impulse >= 1 && selection_impulse <= player.loadout_ui_item_count)
-    {
-        if (selection_impulse == 1)         { selected_weapon_id = player.loadout_ui_item_id_1; }
-        else if (selection_impulse == 2)    { selected_weapon_id = player.loadout_ui_item_id_2; }
-        else if (selection_impulse == 3)    { selected_weapon_id = player.loadout_ui_item_id_3; }
-        else if (selection_impulse == 4)    { selected_weapon_id = player.loadout_ui_item_id_4; } 
-        else if (selection_impulse == 5)    { selected_weapon_id = player.loadout_ui_item_id_5; } 
-        else                                { selected_weapon_id = WEAPON_ID_NONE; }
-
-        if (selected_weapon_id != WEAPON_ID_NONE)
-        {
-            LoadoutUI_ConfirmSelection(player, selected_weapon_id);
-        }
-        player.impulse = 0; 
-    }
-}
-
-void LoadoutUI_ConfirmSelection(entity player, float selected_weapon_id)
-{
-    local string weapon_name;
-    local string slot_name;
-
-    if (selected_weapon_id == WEAPON_ID_NONE)
-    {
-        sprint(player, "Invalid selection.\n"); 
-        LoadoutUI_Toggle(player, 0); 
-        return;
-    }
-
-    if (player.loadout_ui_target_slot_flag == IT_SLOT_PRIMARY)
-    {
-        player.loadout_id_primary = selected_weapon_id;
-    } 
-    else
-    {
-        dprint("##Quedra LoadoutUI_ConfirmSelection: Error - UI was active for an unhandled slot_flag: ");
-        dprint(ftos(player.loadout_ui_target_slot_flag));
-        dprint("\n");
-        LoadoutUI_Toggle(player, 0); 
-        return;
-    }
-    
-    weapon_name = FQX_GetWeaponDisplayName(selected_weapon_id);
-    slot_name = GetSlotNameFromFlag(player.loadout_ui_target_slot_flag);
-    sprint(player, strcat(weapon_name, " selected for ", slot_name, "!\n")); // Corrected 
-    dprint(strcat("LoadoutUI_ConfirmSelection: Confirmed: ", weapon_name, " for ", slot_name, "\n")); // Added dprint for confirmation
-
-    LoadoutUI_Toggle(player, 0);
-}
 
 //=============================================================================
-// op_loadout.qc - FQX Mod - Weapon Loadout Configuration & UI - END
-// ##FQXCUSTOM - ##Quedra: Version 1.4.29
+// op_loadout.qc - FQX Mod - Weapon Loadout Configuration - END
+// ##FQXCUSTOM - ##Fox: Version 1.4.30
 //=============================================================================

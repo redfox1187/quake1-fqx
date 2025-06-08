@@ -184,26 +184,30 @@ float(entity targ) range =
 	return RANGE_FAR;
 };
 
-/*
-=============
-visible
-
-returns 1 if the entity is visible to self, even if not infront ()
-=============
-*/
 float (entity targ) visible =
 {
 	local vector	spot1, spot2;
-	
+
 	spot1 = self.origin + self.view_ofs;
 	spot2 = targ.origin + targ.view_ofs;
-	traceline (spot1, spot2, TRUE, self);	// see through other monsters
+	traceline (spot1, spot2, TRUE, self);
+
+	// Rook's Visual Diagnostic Tap
+	if (trace_fraction == 1)
+    {
+		draw_line(spot1, spot2, 120, 0.5, TRUE); // Green line for clear LoS
+    }
+	else
+    {
+		draw_line(spot1, spot2, 220, 0.5, TRUE); // Red line for blocked LoS
+    }
 	
 	if (trace_inopen && trace_inwater)
-		return FALSE;			// sight line crossed contents
+		return FALSE;
 
 	if (trace_fraction == 1)
 		return TRUE;
+
 	return FALSE;
 };
 

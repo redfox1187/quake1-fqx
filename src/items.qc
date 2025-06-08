@@ -356,14 +356,14 @@ void() bound_other_ammo =
 {
 	if (other.ammo_shells > 300) // [cite: 47]
 		other.ammo_shells = 300; // [cite: 47]
-	if (other.ammo_nails > 200) // [cite: 48]
-		other.ammo_nails = 200; // [cite: 48]
+	if (other.ammo_nails > 400) // [cite: 48]
+		other.ammo_nails = 400; // [cite: 48]
 
 	if (other.ammo_rockets > 100) // [cite: 48]
 		other.ammo_rockets = 100;		 // [cite: 48]
 
-	if (other.ammo_cells > 100) // [cite: 48]
-		other.ammo_cells = 100;		 // [cite: 48]
+	if (other.ammo_cells > 400) // [cite: 48]
+		other.ammo_cells = 400;		 // [cite: 48]
 };
 float(float w) RankForWeapon =
 {
@@ -498,7 +498,7 @@ void() weapon_touch =
 		if (leave_item && (player_entity.items & IT_SLOT_AUX2) ) // [cite: 66]
 			return; // [cite: 66]
 		new_item_flag_for_slot = IT_SLOT_AUX2; // [cite: 67]
-		player_entity.ammo_cells = player_entity.ammo_cells + 15; // [cite: 67]
+		player_entity.ammo_cells = player_entity.ammo_cells + 30; // [cite: 67]
 	}
 	else
 		objerror ("weapon_touch: unknown classname"); // [cite: 67]
@@ -641,7 +641,7 @@ void() ammo_touch =
 // spikes
 	if (self.weapon == 2) // [cite: 88] // Corresponds to nails
 	{
-		if (player_entity.ammo_nails >= 200) // [cite: 88]
+		if (player_entity.ammo_nails >= 400) // [cite: 88]
 			return; // [cite: 88]
 		player_entity.ammo_nails = player_entity.ammo_nails + self.aflag; // [cite: 89]
 	}
@@ -655,7 +655,7 @@ void() ammo_touch =
 //	cells
 	if (self.weapon == 4) // [cite: 89] // Corresponds to cells
 	{
-		if (player_entity.ammo_cells >= 100) // [cite: 89]
+		if (player_entity.ammo_cells >= 400) // [cite: 89]
 			return; // [cite: 89]
 		player_entity.ammo_cells = player_entity.ammo_cells + self.aflag; // [cite: 90]
 	}
@@ -1244,7 +1244,7 @@ void() BackpackTouch =
 		{
 		//Tier 1 ammo [cite: 160]
 		self.ammo_shells = 15; // [cite: 160]
-		self.ammo_nails = 15; // [cite: 161]
+		self.ammo_nails = 30; // [cite: 161]
 		self.ammo_rockets = 1; // [cite: 161]
 		self.ammo_cells = 15; // [cite: 161]
 		player_entity.loot_bonus = 0; // [cite: 161]
@@ -1253,7 +1253,7 @@ void() BackpackTouch =
 		{
 		//Tier 2 ammo [cite: 162]
 		self.ammo_shells = 30; // [cite: 162]
-		self.ammo_nails = 25; // [cite: 162]
+		self.ammo_nails = 50; // [cite: 162]
 		self.ammo_rockets = 10; // [cite: 162]
 		self.ammo_cells = 25; // [cite: 162]
 		player_entity.loot_bonus = 0; // [cite: 163]
@@ -1262,7 +1262,7 @@ void() BackpackTouch =
 		{
 		//Best Tier ammo [cite: 163]
 		self.ammo_shells = 150; // [cite: 163]
-		self.ammo_nails = 100; // [cite: 163]
+		self.ammo_nails = 200; // [cite: 163]
 		self.ammo_rockets = 50; // [cite: 163]
 		self.ammo_cells = 100; // [cite: 163]
 		player_entity.loot_bonus = 0; // [cite: 163]

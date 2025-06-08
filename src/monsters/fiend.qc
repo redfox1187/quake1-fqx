@@ -173,8 +173,6 @@ void()	demon1_die4		=[	$death4,		demon1_die5	] {};
 void()	demon1_die5		=[	$death5,		demon1_die6	] {};
 void()	demon1_die6		=[	$death6,		demon1_die7	] {
 	self.solid = SOLID_NOT;
-	self.ammo_rockets = 1;
-	DropBackpack();
 };
 void()	demon1_die7		=[	$death7,		demon1_die8	] {};
 void()	demon1_die8		=[	$death8,		demon1_die9	] {};

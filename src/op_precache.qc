@@ -38,7 +38,7 @@ void FQX_Precache_Generic_Assets()
     // --- Player Models & Sounds ---
     precache_model("progs/player.mdl");       // ##IDSOFT - ##Quedra: Standard player model. [cite: 11]
     precache_model("progs/eyes.mdl");         // ##IDSOFT - ##Quedra: Player eyes model for invisibility. [cite: 11]
-    precache_model("progs/h_player.mdl");     // ##IDSOFT - ##Quedra: Player head gib model. [cite: 12]
+//    precache_model("progs/h_player.mdl");     // ##IDSOFT - ##Quedra: Player head gib model. [cite: 12]
     precache_model("progs/gib1.mdl");         // ##IDSOFT - ##Quedra: Generic gib model 1. [cite: 12]
     precache_model("progs/gib2.mdl");         // ##IDSOFT - ##Quedra: Generic gib model 2. [cite: 13]
     precache_model("progs/gib3.mdl");         // ##IDSOFT - ##Quedra: Generic gib model 3. [cite: 14]

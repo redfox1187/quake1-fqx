@@ -1,24 +1,9 @@
 //=============================================================================
 // weapons.qc - FQX Mod - Core Weapon Handling & Standard Implementations
-// ##FQXCUSTOM - ##Quedra: Version 3.6.0
+// ##FQXCUSTOM - ##Quedra: Version 3.6.2
 // ##Quedra: Based on id Software's original weapons.qc.
-// ##Quedra: v3.6.0 - Refactored FQX_WeaponHasSufficientResource for shotguns to use
-// ##Quedra:          GetShellResourceCost() based on weapon's SHELL_TYPE_PRIMARY.
-// ##Quedra:        - Added GetWeaponShellTypeID() helper function.
-// ##Quedra:        - W_HasNoAmmo now leverages refactored FQX_WeaponHasSufficientResource for mag weapons.
-// ##Quedra:        - Requires WEAPON_XXX_SHELL_TYPE_PRIMARY constants to be globally accessible
-// ##Quedra:          (ideally defined in defs_2.qc as e.g. SAWNOFF_DATA_SHELL_TYPE_PRIMARY)
-// ##Quedra:          and GetShellResourceCost() forward declared in defs_2.qc.
-// ##Quedra: v3.5 - Corrected W_SetCurrentAmmo for inactive IT_SLOT_UTILITY.
-// ##Quedra:        - Corrected W_HasNoAmmo by removing AMMO_ID_NONE check.
-// ##Quedra: v3.4 - Overhauled W_HasNoAmmo for FQX magazine and resource system.
-// ##Quedra:        - Overhauled W_BestWeapon to Soldier's FQX specifications.
-// ##Quedra:        - Added helper functions FQX_IsWeaponExplosive and FQX_WeaponHasSufficientResource (previous version).
-// ##Quedra: v3.3 - Removed the empty W_Precache() function definition entirely.
-// ##Quedra: v3.2 - W_Precache function content moved to FQX_Precache_AllWeaponAssets() in op_precache.qc.
-// ##Quedra: v3.1 - Modified W_SetCurrentAmmo, W_Attack, and ToggleFireMode for IT_SLOT_PRIMARY.
-// ##Quedra: v3.0 - Updated W_Precache to include original viewmodels used by AUX slots.
-// ##Quedra: v2.9 - Added 'const' to SpawnBlood definition.
+// ##Quedra: v3.6.2 - Implemented forceful monster alert via ATTN_IDLE sound.
+// ##Quedra:        - Corrected W_SetCurrentAmmo to call w_q_rl_SetCurrentAmmo for RL.
 //=============================================================================
 
 /* Copyright (C) 1996-2022 id Software LLC
@@ -75,9 +60,7 @@ void() SuperDamageSound;
 // ##FQXCUSTOM - ##Quedra: Helper function forward declarations
 float FQX_IsWeaponExplosive(float weapon_id);
 float FQX_WeaponHasSufficientResource(entity player, float check_weapon_id);
-// float GetShellResourceCost(float shell_type_id); // ##Quedra: Defined in am_buckshot.qc, needs forward declaration in defs_2.qc
-float GetWeaponShellTypeID(float weapon_id); // ##Quedra: New helper function defined below
-
+float GetWeaponShellTypeID(float weapon_id);
 
 //=============================================================================
 // ##IDSOFT - ##Quedra: crandom - Standard utility
@@ -261,7 +244,7 @@ void() T_MissileTouch =
     if (other == self.owner) { return; } 
     if (pointcontents(self.origin) == CONTENT_SKY) { remove(self); return; } 
     damg = 100 + random() * 20;
-    if (other.health) { if (other.classname == "monster_shambler") { damg = damg * 0.5; } T_Damage(other, self, self.owner, damg); } 
+    //if (other.health) { if (other.classname == "monster_shambler") { damg = damg * 0.5; } T_Damage(other, self, self.owner, damg); } //#FQX - ##Fox: Shamblers don't reduce explosive damage anymore. 
     T_RadiusDamage(self, self.owner, 120, other);
     self.origin = self.origin - 8 * normalize(self.velocity);  
     WriteByte(MSG_BROADCAST, SVC_TEMPENTITY);
@@ -276,7 +259,8 @@ void() W_FireRocket =
     self.currentammo = self.ammo_rockets = self.ammo_rockets - 1;
     sound(self, CHAN_WEAPON, "weapons/sgun1.wav", 1, ATTN_NORM);  
     self.punchangle_x = -2;
-    missile = spawn(); missile.owner = self; missile.movetype = MOVETYPE_FLYMISSILE; missile.solid = SOLID_BBOX; missile.classname = "missile";
+    missile = spawn();
+    missile.owner = self; missile.movetype = MOVETYPE_FLYMISSILE; missile.solid = SOLID_BBOX; missile.classname = "missile";
     makevectors(self.v_angle); missile.velocity = aim(self, 1000);
     missile.velocity = missile.velocity * 1000; missile.angles = vectoangles(missile.velocity);
     missile.touch = T_MissileTouch; missile.nextthink = time + 5; missile.think = SUB_Remove;
@@ -314,7 +298,8 @@ void() W_FireLightning =
     self.currentammo = self.ammo_cells = self.ammo_cells - 1;
     org = self.origin + '0 0 16'; makevectors(self.v_angle);
     traceline(org, org + v_forward * 600, TRUE, self);  
-    WriteByte(MSG_BROADCAST, SVC_TEMPENTITY); WriteByte(MSG_BROADCAST, TE_LIGHTNING2); WriteEntity(MSG_BROADCAST, self);
+    WriteByte(MSG_BROADCAST, SVC_TEMPENTITY); WriteByte(MSG_BROADCAST, TE_LIGHTNING2);
+    WriteEntity(MSG_BROADCAST, self);
     WriteCoord(MSG_BROADCAST, org_x); WriteCoord(MSG_BROADCAST, org_y); WriteCoord(MSG_BROADCAST, org_z); WriteCoord(MSG_BROADCAST, trace_endpos_x); WriteCoord(MSG_BROADCAST, trace_endpos_y); WriteCoord(MSG_BROADCAST, trace_endpos_z);
     LightningDamage(org, trace_endpos + v_forward * 4, self, 30);  
 };
@@ -340,7 +325,8 @@ void() W_FireGrenade =
     self.currentammo = self.ammo_rockets = self.ammo_rockets - 1;
     sound(self, CHAN_WEAPON, "weapons/grenade.wav", 1, ATTN_NORM);  
     self.punchangle_x = -2;
-    missile = spawn(); missile.owner = self; missile.movetype = MOVETYPE_BOUNCE; missile.solid = SOLID_BBOX; missile.classname = "grenade";
+    missile = spawn(); missile.owner = self; missile.movetype = MOVETYPE_BOUNCE; missile.solid = SOLID_BBOX;
+    missile.classname = "grenade";
     makevectors(self.v_angle); 
     if (self.v_angle_x) { missile.velocity = v_forward * 600 + v_up * 200 + crandom() * v_right * 10 + crandom() * v_up * 10; } 
     else { missile.velocity = aim(self, 10000); missile.velocity = missile.velocity * 600; missile.velocity_z = 200; } 
@@ -356,7 +342,11 @@ void() W_SetCurrentAmmo =
 {
     player_run(); self.weaponframe = 0;
     self.items = self.items - (self.items & (IT_SHELLS | IT_NAILS | IT_ROCKETS | IT_CELLS));
-    if (self.weapon == IT_SLOT_MELEE) { self.currentammo = 0; self.weaponmodel = "progs/v_axe.mdl"; } 
+    
+    if (self.weapon == IT_SLOT_MELEE) 
+    { 
+        self.currentammo = 0; self.weaponmodel = "progs/v_axe.mdl";
+    } 
     else if (self.weapon == IT_SLOT_HOLDOUT)  
     {
         local float holdout_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_HOLDOUT);
@@ -386,7 +376,16 @@ void() W_SetCurrentAmmo =
     } 
     else if (self.weapon == IT_SLOT_UTILITY) 
     { 
-        self.currentammo = 0; self.weaponmodel = "progs/v_axe.mdl";
+        local float utility_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_UTILITY);
+        // ##Quedra: Assume w_rl.qc exists with w_q_rl_SetCurrentAmmo.
+        if (utility_weapon_id == WEAPON_ID_RL) { w_q_rl_SetCurrentAmmo(); }
+        else if (utility_weapon_id == WEAPON_ID_GRAPPLE) { /* w_grapple_SetCurrentAmmo(); */ }
+        else 
+        {
+            // Fallback for an empty or unknown utility weapon
+            self.currentammo = 0;
+            self.weaponmodel = "progs/v_axe.mdl";
+        }
     } 
     else if (self.weapon == IT_SLOT_AUX1) { self.currentammo = self.ammo_rockets; self.weaponmodel = "progs/v_rock2.mdl"; self.items = self.items | IT_ROCKETS; } 
     else if (self.weapon == IT_SLOT_AUX2) { self.currentammo = self.ammo_cells; self.weaponmodel = "progs/v_light.mdl"; self.items = self.items | IT_CELLS; } 
@@ -405,28 +404,18 @@ float FQX_IsWeaponExplosive(float weapon_id)
 
 //-----------------------------------------------------------------------------
 // ##FQXCUSTOM - ##Quedra: Helper: GetWeaponShellTypeID (v3.6.0)
-// Desc: Returns the primary SHELL_TYPE_* ID for a given shotgun weapon ID.
-// Note: This function assumes constants like WEAPON_SAWNOFF_SHELL_TYPE_PRIMARY 
-//       are made globally accessible (e.g., defined in defs_2.qc as 
-//       SAWNOFF_DATA_SHELL_TYPE_PRIMARY). This is a placeholder for that system.
-//       Alternatively, these values could be hardcoded here if they are fixed.
 //-----------------------------------------------------------------------------
 float GetWeaponShellTypeID(float weapon_id)
 {
     if (weapon_id == WEAPON_ID_SAWNOFF) 
     { 
-        // TODO_FQX: Replace with global constant like SAWNOFF_DATA_SHELL_TYPE_PRIMARY from defs_2.qc
-        return SHELL_TYPE_12G_000BUCK; // Assuming Sawn-off uses 000Buck by default for this lookup
+        return SHELL_TYPE_12G_000BUCK;
     }
     else if (weapon_id == WEAPON_ID_IZH43)
     {
-        // TODO_FQX: Replace with global constant like IZH43_DATA_SHELL_TYPE_PRIMARY from defs_2.qc
-        return SHELL_TYPE_12G_000BUCK; // Assuming IZh-43 uses 000Buck by default for this lookup
+        return SHELL_TYPE_12G_000BUCK;
     }
-    // Add other FQX shotguns here if they use specific shell types that dictate resource cost
-    
-    // dprint("GetWeaponShellTypeID: Unhandled weapon_id or not a shell-based shotgun: "); dprint(ftos(weapon_id)); dprint("\n");
-    return 0; // Return 0 or a specific "INVALID_SHELL_TYPE" to indicate not applicable
+    return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -438,10 +427,7 @@ float FQX_WeaponHasSufficientResource(entity player, float check_weapon_id)
 
     local float resource_id_for_weapon;
     local float cost_per_round;
-
-    // Determine primary resource ID for the weapon
-    // This section can be expanded or use a helper like GetWeaponDefinedAmmoResourceID(check_weapon_id)
-    // For now, direct checks for known FQX weapons:
+    
     if (check_weapon_id == WEAPON_ID_SAWNOFF || check_weapon_id == WEAPON_ID_IZH43 || check_weapon_id == WEAPON_ID_M93R)
     { resource_id_for_weapon = AMMO_ID_SHELLS; }
     else if (check_weapon_id == WEAPON_ID_UMP45 || check_weapon_id == WEAPON_ID_AK47)
@@ -452,41 +438,34 @@ float FQX_WeaponHasSufficientResource(entity player, float check_weapon_id)
     { resource_id_for_weapon = AMMO_ID_ROCKETS; }
     else
     {
-        // dprint("FQX_WeaponHasSufficientResource: Unknown weapon ID for resource check: "); dprint(ftos(check_weapon_id)); dprint("\n");
         return FALSE; // Cannot determine resource type
     }
 
-    // Handle shotguns with new shell-type based cost
     if (resource_id_for_weapon == AMMO_ID_SHELLS && (check_weapon_id == WEAPON_ID_SAWNOFF || check_weapon_id == WEAPON_ID_IZH43))
     {
         local float specific_shell_type_id = GetWeaponShellTypeID(check_weapon_id);
-        if (specific_shell_type_id == 0) // Safety check if shell type couldn't be determined
-        {
-            // dprint("FQX_WeaponHasSufficientResource: Could not determine shell type for weapon ID: "); dprint(ftos(check_weapon_id)); dprint("\n");
-            return FALSE; 
-        }
-        cost_per_round = GetShellResourceCost(specific_shell_type_id); // Func from am_buckshot.qc (needs fwd decl)
+        if (specific_shell_type_id == 0) { return FALSE; }
+        cost_per_round = GetShellResourceCost(specific_shell_type_id);
         if (player.ammo_shells >= cost_per_round) { return TRUE; }
     }
-    // Retain simplified logic for other existing FQX weapons (can be refactored later if they adopt complex costs)
-    else if (resource_id_for_weapon == AMMO_ID_SHELLS) // e.g. M93R
+    else if (resource_id_for_weapon == AMMO_ID_SHELLS)
     {
-        if (player.ammo_shells >= 1) { return TRUE; } // Placeholder: Assumes 1 shell resource if not SawnOff/IZh43
+        if (player.ammo_shells >= 1) { return TRUE; }
     }
     else if (resource_id_for_weapon == AMMO_ID_NAILS)
     {
-        if (player.ammo_nails >= 1) { return TRUE; } // Assumes 1 nail per mag round for UMP45/AK47
+        if (player.ammo_nails >= 1) { return TRUE; }
     }
     else if (resource_id_for_weapon == AMMO_ID_CELLS)
     {
-        if (player.ammo_cells >= 1) { return TRUE; } // Assumes 1 cell for RAHPM1 (SDR) / LG
+        if (player.ammo_cells >= 1) { return TRUE; }
     }
     else if (resource_id_for_weapon == AMMO_ID_ROCKETS)
     {
-        if (player.ammo_rockets >= 1) { return TRUE; } // Assumes 1 rocket for Grapple/RL
+        if (player.ammo_rockets >= 1) { return TRUE; }
     }
     
-    return FALSE; 
+    return FALSE;
 }
 
 //-----------------------------------------------------------------------------
@@ -534,7 +513,6 @@ float() W_HasNoAmmo =
 
     if (current_weapon_slot == IT_SLOT_MELEE) { return FALSE; }
 
-    // For Utility slot, specifically grapple for now
     if (current_weapon_slot == IT_SLOT_UTILITY) 
     {
         if (current_weapon_id == WEAPON_ID_GRAPPLE) 
@@ -549,34 +527,31 @@ float() W_HasNoAmmo =
              }
              return FALSE;
         }
-        return FALSE; // Other utility might not use ammo this way or not yet defined
+        return FALSE;
     }
     
-    // FQX Magazine Weapons Check
     if (self.current_weapon_max_mag_capacity > 0) 
     {
-        if (self.weapon_ammo_in_magazine > 0) // Has rounds in magazine
+        if (self.weapon_ammo_in_magazine > 0)
         {
             return FALSE;
         }
-        else // Magazine is empty, check if can reload from global resource
+        else
         {
             if (FQX_WeaponHasSufficientResource(self, current_weapon_id))
             {
-                 // Can reload (has enough global ammo for at least one mag round)
-                return FALSE; 
+                return FALSE;
             }
-            else // Cannot reload from global ammo
+            else
             {
                 sprint(self, PRINT_LOW, "$qc_not_enough_ammo\n");
-                self.weapon = W_BestWeapon(); // Switch to best available
-                self.weapon_first_draw_init = TRUE; 
+                self.weapon = W_BestWeapon();
+                self.weapon_first_draw_init = TRUE;
                 W_SetCurrentAmmo(); 
-                return TRUE; // Truly out of ammo
+                return TRUE;
             }
         }
     }
-    // Standard (Non-FQX Magazine) Weapon Check (e.g. original Quake RL, LG if any remain with this logic)
     else if (self.currentammo <= 0) 
     {
         sprint(self, PRINT_LOW, "$qc_not_enough_ammo\n");
@@ -597,38 +572,44 @@ void() player_light1;
 void() player_rocket1;
 void() W_Attack =
 {
-    local float r; local float equipped_weapon_id;
+    local float r; 
+    local float equipped_weapon_id;
+    
     if (self.quick_melee_active == TRUE) { Quick_Melee_End(); return; }
     
     if (W_HasNoAmmo()) { return; }
     
+    // ##Quedra: Forcefully alert monsters using a silent sound with idle attenuation.
+    // ##Quedra: This is more reliable than show_hostile for reverted monster AI.
+    sound(self, CHAN_VOICE, "misc/null.wav", 1, 2); // ATTN_IDLE is 2
+	self.show_hostile = time + 1;
+	
     makevectors(self.v_angle);
-    self.show_hostile = time + 1;
     if (!(self.weapon == IT_SLOT_MELEE || self.weapon == IT_SLOT_HOLDOUT)) { self.fired_weapon = 1; } 
 
-    if (self.weapon == IT_SLOT_MELEE) { sound(self, CHAN_WEAPON, "weapons/ax1.wav", 1, ATTN_NORM); r = random();
-        if (r < 0.25) { player_axe1(); } else if (r<0.5) { player_axeb1(); } else if (r<0.75) { player_axec1(); } else { player_axed1(); } self.attack_finished = time + 0.5; } 
-    else if (self.weapon == IT_SLOT_HOLDOUT) { player_shot1(); equipped_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_HOLDOUT);
-        if (equipped_weapon_id == WEAPON_ID_M93R) { W_FireM93R(); } else if (equipped_weapon_id == WEAPON_ID_RAHPM1) { W_FireRahp(); } } 
-    else if (self.weapon == IT_SLOT_SECONDARY) { player_shot1(); equipped_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_SECONDARY);
-        if (equipped_weapon_id == WEAPON_ID_SAWNOFF) { W_FireSawnoff(); } else if (equipped_weapon_id == WEAPON_ID_IZH43) { W_FireIZH43(); } } 
+    if (self.weapon == IT_SLOT_MELEE) { sound(self, CHAN_WEAPON, "weapons/ax1.wav", 1, ATTN_NORM); r = random(); if (r < 0.25) { player_axe1(); } else if (r<0.5) { player_axeb1(); } else if (r<0.75) { player_axec1(); } else { player_axed1(); } self.attack_finished = time + 0.5; } 
+    else if (self.weapon == IT_SLOT_HOLDOUT) { player_shot1(); equipped_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_HOLDOUT); if (equipped_weapon_id == WEAPON_ID_M93R) { W_FireM93R(); } else if (equipped_weapon_id == WEAPON_ID_RAHPM1) { W_FireRahp(); } } 
+    else if (self.weapon == IT_SLOT_SECONDARY) { player_shot1(); equipped_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_SECONDARY); if (equipped_weapon_id == WEAPON_ID_SAWNOFF) { W_FireSawnoff(); } else if (equipped_weapon_id == WEAPON_ID_IZH43) { W_FireIZH43(); } } 
     else if (self.weapon == IT_SLOT_PRIMARY) 
     { 
-        player_shot1(); local float primary_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_PRIMARY);
+        player_shot1();
+        local float primary_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_PRIMARY);
         if (primary_weapon_id == WEAPON_ID_IZH43) { W_FireIZH43(); }
         else if (primary_weapon_id == WEAPON_ID_UMP45) { W_FireUMP45(); }
         else { W_FireUMP45(); } 
     } 
     else if (self.weapon == IT_SLOT_HEAVY) 
     { 
-        player_shot1(); local float heavy_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_HEAVY);
+        player_shot1();
+        local float heavy_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_HEAVY);
         if (heavy_weapon_id == WEAPON_ID_AK47) { W_FireAk47(); }
         else { W_FireAk47(); } 
     } 
     else if (self.weapon == IT_SLOT_UTILITY) 
     { 
-        player_rocket1(); local float utility_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_UTILITY);
-        if (utility_weapon_id == WEAPON_ID_GRAPPLE) { /* W_FireGrapple(); */ } 
+        local float utility_weapon_id = GetWeaponIDForITSlot(self, IT_SLOT_UTILITY);
+        if (utility_weapon_id == WEAPON_ID_GRAPPLE) { /* W_FireGrapple(); */ }
+		else if (utility_weapon_id == WEAPON_ID_RL) { W_FireRL(); }
     } 
     else if (self.weapon == IT_SLOT_AUX1) { player_rocket1(); W_FireRocket(); self.attack_finished = time + 0.8; } 
     else if (self.weapon == IT_SLOT_AUX2) { player_light1(); sound(self, CHAN_AUTO, "weapons/lstart.wav", 1, ATTN_NORM); W_FireLightning(); } 
@@ -660,15 +641,16 @@ void() W_ChangeWeapon =
     
     if (ammo_check_needed == TRUE) 
     {
-        target_weapon_id = GetWeaponIDForITSlot(self, target_slot); 
+        target_weapon_id = GetWeaponIDForITSlot(self, target_slot);
         if (target_weapon_id == WEAPON_ID_NONE) 
         {
-            sprint(self, PRINT_LOW, "$qc_no_weapon\n"); return;
+            sprint(self, PRINT_LOW, "$qc_no_weapon\n");
+            return;
         }
-        // ##Quedra v3.6.0: FQX_WeaponHasSufficientResource now handles the detailed check
         if (!FQX_WeaponHasSufficientResource(self, target_weapon_id))
         {
-            sprint(self, PRINT_LOW, "$qc_not_enough_ammo\n"); return;
+            sprint(self, PRINT_LOW, "$qc_not_enough_ammo\n");
+            return;
         }
     } 
     
@@ -685,7 +667,7 @@ void() QuadCheat = { if (cvar("developer") == 0 && (deathmatch || coop)) { retur
 //============================================================================
 // ##IDSOFT - ##Quedra: CheatCommand - For "impulse 9"
 //============================================================================
-void() CheatCommand = { if ((deathmatch || coop) && (cvar("developer") == 0)) { return; } self.ammo_rockets=100; self.ammo_nails=200; self.ammo_shells=100; self.ammo_cells=200; self.items = self.items | IT_SLOT_MELEE | IT_SLOT_HOLDOUT | IT_SLOT_SECONDARY | IT_SLOT_PRIMARY | IT_SLOT_HEAVY | IT_SLOT_UTILITY | IT_SLOT_AUX1 | IT_SLOT_AUX2 | IT_KEY1 | IT_KEY2 | IT_ARMOR3; self.armortype=0.8; self.armorvalue=200; self.weapon_first_draw_init = TRUE; self.weapon=IT_SLOT_AUX1; W_SetCurrentAmmo(); };
+void() CheatCommand = { if ((deathmatch || coop) && (cvar("developer") == 0)) { return; } self.ammo_rockets=100; self.ammo_nails=400; self.ammo_shells=300; self.ammo_cells=400; self.items = self.items | IT_SLOT_MELEE | IT_SLOT_HOLDOUT | IT_SLOT_SECONDARY | IT_SLOT_PRIMARY | IT_SLOT_HEAVY | IT_SLOT_UTILITY | IT_SLOT_AUX1 | IT_SLOT_AUX2 | IT_KEY1 | IT_KEY2 | IT_ARMOR3; self.armortype=0.8; self.armorvalue=200; self.weapon_first_draw_init = TRUE; self.weapon=IT_SLOT_AUX1; W_SetCurrentAmmo(); };
 //============================================================================
 // ##FQXCUSTOM - ##Quedra: ToggleFireMode
 //============================================================================
@@ -770,5 +752,5 @@ void() SuperDamageSound =
 };
 //=============================================================================
 // weapons.qc - End of FQX Mod - Core Weapon Handling
-// ##FQXCUSTOM - ##Quedra: Version 3.6.0
+// ##FQXCUSTOM - ##Quedra: Version 3.6.2
 //=============================================================================
