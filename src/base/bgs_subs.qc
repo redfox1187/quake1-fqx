@@ -2,14 +2,12 @@
 //
 //  ##File: bgs_subs.qc
 //  ##File Description: Base Game Systems - General Subroutines
-//  ##FQX - ##FQXnote.: Version 1.3.0 (20250611.054522CDT)
+//  ##FIREFQX: Version 1.4.0 (20250612.062154CDT)
 //
-//  ##FQXnote.
-//    v1.3.0 - Removed SUB_AttackFinished. The function has been relocated
-//             to bgs_ai.qc to resolve a circular dependency.
-//    v1.2.1 - Reverted incorrect 'strcat' implementation.
-//    v1.2.0 - Transcribed 'makevectorsfixed'.
-//    v1.1.0 - Corrected 'visible' function call.
+//  ##FIREFQX
+//   v1.4.0 - Added missing path_corner and movetarget_f functions from
+//            QRRQC source to fix train pathing.
+//   v1.3.0 - Relocated SUB_AttackFinished to bgs_ai.qc.
 //
 // =======================================================================
 
@@ -63,6 +61,50 @@ void() InitTrigger =
 	self.model = string_null;
 };
 
+// ##FIREFQX.. Added functions from QRRQC-ai.qc.txt
+void() t_movetarget =
+{
+	local entity	temp;
+	if (other.movetarget != self)
+		return;
+
+	if (other.enemy)
+		return;		// fighting, not following a path
+
+	temp = self;
+	self = other;
+	other = temp;
+	if (self.classname == "monster_ogre")
+		sound (self, CHAN_VOICE, "ogre/ogdrag.wav", 1, ATTN_IDLE);
+
+	self.goalentity = self.movetarget = find (world, targetname, other.target);
+	self.ideal_yaw = vectoyaw(self.goalentity.origin - self.origin);
+	if (!self.movetarget)
+	{
+		self.pausetime = time + 999999;
+		self.th_stand ();
+		return;
+	}
+};
+
+void() movetarget_f =
+{
+	if (!self.targetname)
+		objerror ("monster_movetarget: no targetname");
+	self.solid = SOLID_TRIGGER;
+	self.touch = t_movetarget;
+	setsize (self, '-8 -8 -8', '8 8 8');
+};
+
+/*QUAKED path_corner (0.5 0.3 0) (-8 -8 -8) (8 8 8)
+Monsters will continue walking towards the next target corner.
+*/
+void() path_corner =
+{
+	movetarget_f ();
+};
+
+
 /*
 =============
 SUB_CalcMove
@@ -97,12 +139,16 @@ void(vector tdest, float tspeed, void() func) SUB_CalcMove =
 		return;
 	}
 
-	// set destdelta to the vector needed to move
 	vdestdelta = tdest - self.origin;
-	// calculate length of vector
 	len = vlen (vdestdelta);
 
-	// divide by speed to get time to reach dest
+	if (len == 0) // ##FIREFQX.. Avoid division by zero if already at destination
+	{
+		self.velocity = '0 0 0';
+		self.nextthink = self.ltime + 0.1;
+		return;
+	}
+
 	traveltime = len / tspeed;
 	if (traveltime < 0.1)
 	{
@@ -111,11 +157,8 @@ void(vector tdest, float tspeed, void() func) SUB_CalcMove =
 		return;
 	}
 
-	// set nextthink to trigger a think when dest is reached
 	self.nextthink = self.ltime + traveltime;
-	// scale the destdelta vector by the time spent traveling to get velocity
 	self.velocity = vdestdelta * (1/traveltime);
-	// qcc won't take vec/float
 };
 
 /*
@@ -154,16 +197,22 @@ void(vector destangle, float tspeed, void() func) SUB_CalcAngleMove =
 
 	if (!tspeed)
 		objerror("No speed is defined!");
-	// set destdelta to the vector needed to move
+
 	destdelta = destangle - self.angles;
-	// calculate length of vector
 	len = vlen (destdelta);
 
-	// divide by speed to get time to reach dest
+	if(len == 0)
+	{
+		self.avelocity = '0 0 0';
+		self.nextthink = self.ltime + 0.1;
+		self.think = SUB_CalcAngleMoveDone;
+		self.finalangle = destangle;
+		self.think1 = func;
+		return;
+	}
+
 	traveltime = len / tspeed;
-	// set nextthink to trigger a think when dest is reached
 	self.nextthink = self.ltime + traveltime;
-	// scale the destdelta vector by the time spent traveling to get velocity
 	self.avelocity = destdelta * (1 / traveltime);
 	self.think1 = func;
 	self.finalangle = destangle;
@@ -201,12 +250,9 @@ SUB_UseTargets
 void() SUB_UseTargets =
 {
 	local entity t, act, stemp, otemp;
-	//
-	// check for a delay
-	//
+
 	if (self.delay)
 	{
-		// create a temp object to fire at a later time
 		t = spawn();
 		t.classname = "DelayedUse";
 		t.nextthink = time + self.delay;
@@ -218,10 +264,6 @@ void() SUB_UseTargets =
 		return;
 	}
 
-
-//
-// print the message
-//
 	if (activator.classname == "player" && self.message != string_null)
 	{
 		centerprint (activator, self.message);
@@ -229,9 +271,6 @@ void() SUB_UseTargets =
 			sound (activator, CHAN_VOICE, "misc/talk.wav", 1, ATTN_NORM);
 	}
 
-	//
-	// kill the killtagets
-	//
 	if (self.killtarget != string_null)
 	{
 		t = find (world, targetname, self.killtarget);
@@ -242,9 +281,6 @@ void() SUB_UseTargets =
 		}
 	}
 
-	//
-	// fire targets
-	//
 	if (self.target != string_null)
 	{
 		act = activator;
@@ -292,6 +328,7 @@ void() SUB_CheckRefire =
 };
 
 // =======================================================================
-// ##FQX - ##FQXnote.: Version 1.3.0
-// ##File: bgs_subs.qc
+// Project: FQX Phoenix
+// File: base/bgs_subs.qc - File Version: 1.4.0
+// Last Coder: ##FIREFQX
 // =======================================================================

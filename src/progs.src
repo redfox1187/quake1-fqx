@@ -1,34 +1,22 @@
 //=============================================================================
 // progs.src - FQX Mod - Main Compilation File
 // Location: /src/
-// ##FQX - ##FQXnote.: Version 1.1.0 (20250611.054522CDT)
-// ##Quedra: Defines the compilation order for all FQX Phoenix QuakeC source files.
+// ##FQX - ##FQXnote.: Version 3.0.0 (20250612.031500CDT)
 //
 // ##FQXnote.
-//   v1.1.0 - Reordered bgs_ai.qc to be compiled before bgs_subs.qc,
-//            resolving a circular dependency.
-//   v1.0.2 - Added defs_fqx_globals.qc.
+//   v3.0.0 - Consolidated all definition files into a single defs.qc to
+//            resolve entity field misalignment and memory corruption issues.
 //
 //=============================================================================
 
-// ##Quedra: Target output file for the compiled game logic.
 ../progs.dat
 
-// ##FQX - ##Quedra: This pragma ensures strict vanilla Quake compatibility for the KEX Engine.
 #pragma TARGET ID
 
-// ##FQX - PART 1 - CORE DEFINITIONS
-defs/defs_quake_core.qc
-defs/defs_fqx_globals.qc
-defs/defs_fqx_fields.qc
-defs/defs_fqx_constants.qc
-defs/defs_fqx_builtins.qc
-defs/defs_fqx_fdec_weapons.qc
-defs/defs_fqx_fdec_systems.qc
-defs/defs_fqx_fdec_monsters.qc
+// ##FQX - PART 1 - CORE DEFINITIONS (Monolithic)
+defs.qc
 
 // ##FQX - PART 2 - BASE GAME SYSTEMS
-// ##FQXnote.: Reordered to resolve circular dependencies.
 base/bgs_ai.qc
 base/bgs_subs.qc
 base/bgs_combat.qc
@@ -76,6 +64,4 @@ base/bgs_world.qc
 
 //=============================================================================
 // progs.src - FQX Mod - Main Compilation File - END
-// ##FQX - ##FQXnote.: Version 1.1.0
-// ##File: progs.src
 //=============================================================================

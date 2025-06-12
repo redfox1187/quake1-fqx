@@ -2,13 +2,14 @@
 //
 //  ##File: bgs_ai.qc
 //  ##File Description: Base Game Systems - Core AI Logic
-//  ##FQX - ##FQXnote.: Version 1.4.0 (20250611.054522CDT)
+//  ##FQX - ##FQXnote.: Version 1.4.2 (20250612.043459CDT)
 //
 //  ##FQXnote.
-//    v1.4.0 - Relocated SUB_AttackFinished() here from bgs_subs.qc to
-//             resolve a circular dependency with that file.
-//    v1.3.0 - Added 'enemy_visible' to global variable declarations.
-//    v1.2.0 - Transcribed core AI action functions.
+//   v1.4.2 - Corrected a formatting error where authortags were not
+//            properly commented out.
+//   v1.4.1 - Corrected call to non-standard 'makevectorsfixed'. Replaced
+//            with the standard 'makevectors' built-in to resolve
+//            compiler error while preserving the function's intent.
 //
 // =======================================================================
 
@@ -347,14 +348,14 @@ float() CheckAttack =
 	local float		chance;
 
 	targ = self.enemy;
-	
+
 	spot1 = self.origin + self.view_ofs;
 	spot2 = targ.origin + targ.view_ofs;
 	traceline (spot1, spot2, FALSE, self);
 
 	if (trace_ent != targ)
 		return FALSE;
-			
+
 	if (trace_inopen && trace_inwater)
 		return FALSE;
 
@@ -369,13 +370,13 @@ float() CheckAttack =
 			return TRUE;
 		}
 	}
-	
+
 	if (!self.th_missile)
 		return FALSE;
-		
+
 	if (time < self.attack_finished)
 		return FALSE;
-		
+
 	if (enemy_range == RANGE_FAR)
 		return FALSE;
 
@@ -440,7 +441,7 @@ void() ai_face =
 
 void(entity monster, float d) ai_charge =
 {
-	ai_face ();	
+	ai_face ();
 	movetogoal (d);
 };
 
@@ -448,18 +449,21 @@ void() ai_charge_side =
 {
 	local	vector	dtemp;
 	local	float	heading;
-	
+
 	self.ideal_yaw = vectoyaw(self.enemy.origin - self.origin);
 	ChangeYaw ();
 
-	makevectorsfixed(self.angles);
+	// ##FQXnote.. Corrected to use the standard 'makevectors' built-in.
+	// ##FQXnote.. This preserves the intended strafing logic.
+	makevectors(self.angles);
+
 	dtemp = self.enemy.origin - 30*v_right;
 	heading = vectoyaw(dtemp - self.origin);
-	
+
 	walkmove(heading, 20);
 };
 
 // =======================================================================
-// ##FQX - ##FQXnote.: Version 1.4.0
+// ##FQX - ##FQXnote.: Version 1.4.2
 // ##File: bgs_ai.qc
 // =======================================================================
