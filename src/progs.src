@@ -1,127 +1,81 @@
 //=============================================================================
-// progs.src - FQX Mod
-// ##FQX - ##Quedra: Version 1.1.2
-// ##Quedra: Master compilation list for FTEQCC. Order is crucial.
-// ##Quedra: Adhering to FQX tagging and KEX engine considerations.
-// ##Quedra: v1.1.2 - Correctly reinstated maps.qc and ensured map_operations.qc
-// ##Quedra:          is a distinct, properly commented entry.
-// ##Quedra: v1.1.1 - Updated op_defs.qc entry comment to FQX standards.
-// ##Quedra:          - Updated ##IDSOFT tags to ##IDSOFT: syntax throughout.
-// ##Quedra: v1.1   - Integrated op_precache.qc, am_reload.qc, w_sawnoff.qc (Original baseline).
+// progs.src - FQX Mod - Main Compilation File
+// Location: /src/
+// ##FQX - ##FQXnote.: Version 1.1.0 (20250611.054522CDT)
+// ##Quedra: Defines the compilation order for all FQX Phoenix QuakeC source files.
+//
+// ##FQXnote.
+//   v1.1.0 - Reordered bgs_ai.qc to be compiled before bgs_subs.qc,
+//            resolving a circular dependency.
+//   v1.0.2 - Added defs_fqx_globals.qc.
+//
 //=============================================================================
 
 // ##Quedra: Target output file for the compiled game logic.
-../progs.dat // ##FQX - ##Quedra: Output path for the compiled progs.
+../progs.dat
 
-#pragma TARGET ID // ##FQX - ##Fox: Establishing a clear target for better understanding when working with FTEQCC.
-// ##FQX - ##Quedra: This line should follow '../progs.dat', otherwise it will cause compiler errors.
-//=============================================================================
-// ##Quedra: PART 1 - CORE DEFINITIONS (Absolutely First)
-//=============================================================================
-defs_1.qc        // ##FQXCUSTOM - ##Quedra: Base definitions, likely from standard Quake, adapted for FQX.
-defs_2.qc        // ##FQXCUSTOM - ##Quedra: FQX Mod custom global fields, constants, and MOST forward declarations. (v3.3.0 provided)
-defs_3.qc        // ##FQXCUSTOM - ##Quedra: FQX Mod KEX Aligned standard definitions.
-//op_defs.qc       // ##FQX - ##Quedra: Operational System Definitions (Loadout Config, etc.). V1.0.0
-subs.qc          // ##FQXCUSTOM - ##Quedra: Standard Subroutines and FQX Utilities.
+// ##FQX - ##Quedra: This pragma ensures strict vanilla Quake compatibility for the KEX Engine.
+#pragma TARGET ID
 
-//=============================================================================
-// ##Quedra: PART 1.5 - CORE OPERATIONAL SYSTEMS
-//=============================================================================
-op_precache.qc   // ##FQX       - ##Quedra: Centralized Precache Management.
-op_loadout.qc    // ##FQX       - ##Quedra: Loadout System & Config UI Data Lists. (v2.0.0)
+// ##FQX - PART 1 - CORE DEFINITIONS
+defs/defs_quake_core.qc
+defs/defs_fqx_globals.qc
+defs/defs_fqx_fields.qc
+defs/defs_fqx_constants.qc
+defs/defs_fqx_builtins.qc
+defs/defs_fqx_fdec_weapons.qc
+defs/defs_fqx_fdec_systems.qc
+defs/defs_fqx_fdec_monsters.qc
 
-//=============================================================================
-// ##Quedra: PART 2 - FUNDAMENTAL GAME SYSTEMS & AI
-//=============================================================================
-fight.qc         // ##IDSOFT: Standard Quake AI combat routines.
-ai.qc            // ##IDSOFT: Standard Quake general AI functions.
-combat.qc        // ##IDSOFT: Standard Quake T_Damage, SpawnBlood, etc.
-itemnames.qc     // ##IDSOFT: Standard Quake item names.
-items.qc         // ##FQXCUSTOM - ##Quedra: Item logic, FQX loot, Loadout Zone spawning. (v1.2.0)
+// ##FQX - PART 2 - BASE GAME SYSTEMS
+// ##FQXnote.: Reordered to resolve circular dependencies.
+base/bgs_ai.qc
+base/bgs_subs.qc
+base/bgs_combat.qc
+util/util_combat.qc
+base/bgs_precache.qc
+base/bgs_items.qc
+base/bgs_weapons.qc
+base/bgs_fight.qc
+base/bgs_monsters.qc
+base/bgs_buttons.qc
+base/bgs_doors.qc
+base/bgs_plats.qc
+base/bgs_triggers.qc
+base/bgs_misc.qc
+base/bgs_itemnames.qc
 
-//=============================================================================
-// ##Quedra: PART 3 - GENERIC ADVANCED MUNITIONS (AM_*) CORE MODULES
-// ##Quedra: Path: weapons/advanced_munitions/
-//=============================================================================
-weapons/advanced_munitions/am_recoil.qc       // ##FQX - ##Quedra: Recoil system.
-weapons/advanced_munitions/am_operations.qc   // ##FQX - ##Quedra: Weapon state operations.
-weapons/advanced_munitions/am_ballistics.qc   // ##FQX - ##Quedra: Standard bullet projectile logic.
+// ##FQX - PART 3 - PLAYER & CLIENT LOGIC
+pcl/pcl_intermission.qc
+pcl/pcl_rules.qc
+pcl/pcl_obituary.qc
+pcl/pcl_player.qc
+pcl/pcl_input.qc
+pcl/pcl_main.qc
 
-//=============================================================================
-// ##Quedra: PART 4 - GENERIC FIRE MODE & RELOAD LOGIC
-// ##Quedra: Path: weapons/advanced_munitions/
-//=============================================================================
-weapons/advanced_munitions/am_firemodes.qc    // ##FQX - ##Quedra: Defines parameterized fire functions.
-weapons/advanced_munitions/am_reload.qc       // ##FQX - ##Quedra: Core weapon reload system logic.
+// ##FQX - PART 4 - MONSTER DEFINITIONS
+mon_idsoft/chthon.qc
+mon_idsoft/enforcer.qc
+mon_idsoft/fiend.qc
+mon_idsoft/grunt.qc
+mon_idsoft/hellknight.qc
+mon_idsoft/knight.qc
+mon_idsoft/ogre.qc
+mon_idsoft/rottweiler.qc
+mon_idsoft/rotfish.qc
+mon_idsoft/scrag.qc
+mon_idsoft/shambler.qc
+mon_idsoft/shub.qc
+mon_idsoft/spawn.qc
+mon_idsoft/vore.qc
+mon_idsoft/zombie.qc
+bots/bot.qc
 
-//=============================================================================
-// ##Quedra: PART 5 - SPECIALIZED AMMUNITION TYPE MODULES
-// ##Quedra: Path: weapons/advanced_munitions/ // ##FQXNOTE - ##Quedra: Corrected path assumption based on siblings.
-//=============================================================================
-weapons/advanced_munitions/am_buckshot.qc     // ##FQX - ##Quedra: Buckshot projectile logic.
-weapons/advanced_munitions/am_nails.qc        // ##FQX - ##Quedra: Nail/Spike logic.
-weapons/advanced_munitions/am_ebolt.qc	      // ##FQX - ##Fox: Re-introduced.
-
-//=============================================================================
-// ##Quedra: PART 6 - INDIVIDUAL WEAPON DATA SHEETS & DISPATCHERS (w_*.qc)
-//=============================================================================
-weapons/w_rahpm1.qc     // ##FQX       - ##Quedra: RAHP M1.
-weapons/w_m93r.qc       // ##FQX       - ##Quedra: M93R.
-weapons/w_sawnoff.qc    // ##FQX       - ##Quedra: Sawn-off Shotgun.
-weapons/w_ump45.qc      // ##FQX       - ##Quedra: UMP45.
-weapons/w_izh43.qc      // ##FQXCUSTOM - ##Fox: This shotgun replaced the prototype weapon DBShot. Any instances or comments that reference DBShot is outdated or obsolete.
-weapons/w_ak47.qc       // ##FQX       - ##Quedra: AK47.
-weapons/w_q_snailgun.qc // ##FQXCUSTOM - ##Quedra: Quake Super Nailgun (Adapted).
-
-//=============================================================================
-// ##Quedra: PART 7 - CORE GAMEPLAY LOGIC & ENTITY BEHAVIORS
-//=============================================================================
-weapons.qc       // ##FQXCUSTOM - ##Quedra: Core Weapon Handling.
-player.qc        // ##FQXCUSTOM - ##Quedra: Player Logic and Animations.
-client.qc        // ##FQXCUSTOM - ##Quedra: Client Logic, Loadout Config UI. (v2.3.0)
-world.qc         // ##FQXCUSTOM - ##Quedra: World Spawn, Loadout List Init. (v1.2.0)
-bots/bot.qc      // ##IDSOFT: Bot support (if used).
-//map_operations.qc// ##FQX       - ##Quedra: Custom Map Triggers (trigger_loadout_access). V1.0.0
-maps.qc          // ##FQXCUSTOM - ##Quedra: Custom map-specific logic file.
-doors.qc         // ##IDSOFT: Standard door logic.
-buttons.qc       // ##IDSOFT: Standard button logic.
-triggers.qc      // ##IDSOFT: Standard trigger logic.
-plats.qc         // ##IDSOFT: Standard platform logic.
-misc.qc          // ##IDSOFT: Miscellaneous map entities.
+// ##FQX - PART 5 - WORLDSPAWN
+base/bgs_world.qc
 
 //=============================================================================
-// ##Quedra: PART 8 - MONSTER CORE (MC_*) MODULES
-//=============================================================================
-monsters.qc        // ##IDSOFT: Standard monster definitions (being phased out).
-monsters/monster_core/mc_defs.qc           // ##FQX - ##Quedra: Monster Core Definitions.
-monsters/monster_core/mc_ops_states.qc     // ##FQX - ##Quedra: Monster Core State Operations.
-monsters/monster_core/mc_ops_perception.qc // ##FQX - ##Quedra: Monster Core Perception Operations.
-monsters/monster_core/mc_ops_movement.qc   // ##FQX - ##Quedra: Monster Core Movement Operations.
-monsters/monster_core/mc_ops_combat.qc     // ##FQX - ##Quedra: Monster Core Combat Operations.
-monsters/monster_core/mc_mon_weapons.qc    // ##FQX - ##Quedra: Monster Core Weapon Adaption.
-monsters/monster_core/mc_bh_ai.qc          // ##FQX - ##Quedra: Monster Core AI Behaviors.
-
-//=============================================================================
-// ##Quedra: PART 9 - INDIVIDUAL MONSTER DEFINITIONS
-//=============================================================================
-// --- Individual Monster Types ---
-monsters/ogre.qc        // ##IDSOFT:
-monsters/fiend.qc       // ##IDSOFT:
-monsters/shambler.qc    // ##IDSOFT:
-monsters/knight.qc      // ##IDSOFT:
-monsters/grunt.qc       // ##FQXCUSTOM - ##Fox: Can confirm this grunt is now of our MC. - ##Quedra: Grunt (Likely uses MC system).
-monsters/scrag.qc       // ##IDSOFT:
-monsters/rottweiler.qc  // ##IDSOFT:
-monsters/zombie.qc      // ##IDSOFT:
-monsters/chthon.qc      // ##IDSOFT:
-// --- Registered Monster Types --- // ##FQXNOTE - ##Fox: Actually, this is identifying monsters that were not available in the old 'shareware' version of Quake. - ##Quedra: "Registered" likely refers to QRRQC's structure.
-monsters/spawn.qc       // ##IDSOFT:
-monsters/hellknight.qc  // ##IDSOFT:
-monsters/rotfish.qc     // ##IDSOFT:
-monsters/vore.qc        // ##IDSOFT:
-monsters/enforcer.qc    // ##IDSOFT:
-monsters/shub.qc        // ##IDSOFT:
-
-//=============================================================================
-// ##Quedra: End of progs.src
+// progs.src - FQX Mod - Main Compilation File - END
+// ##FQX - ##FQXnote.: Version 1.1.0
+// ##File: progs.src
 //=============================================================================
