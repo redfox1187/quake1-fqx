@@ -1,20 +1,25 @@
-//=============================================================================
-// progs.src - FQX Mod - Main Compilation File
-// Location: /src/
-// ##FQX - ##FQXnote.: Version 3.0.0 (20250612.031500CDT)
+// ======================================================================= //
+//  ##File: /progs.src
+//  ##Project Version: FQX Phoenix v0.5
+//  ##File Description: FQX Mod - Main Compilation Manifest
+//  ##File Version: 3.0.1 (20250614.192000CDT)
 //
-// ##FQXnote.
+//   v3.0.1 - ##FIREFQX: Updated to include modular definition files from /defs/ subdirectory.
 //   v3.0.0 - Consolidated all definition files into a single defs.qc to
-//            resolve entity field misalignment and memory corruption issues.
+//            resolve entity field misalignment and memory corruption issues. - ##FQXnote
 //
-//=============================================================================
+// =======================================================================
 
 ../progs.dat
 
 #pragma TARGET ID
 
-// ##FQX - PART 1 - CORE DEFINITIONS (Monolithic)
-defs.qc
+// ##FQX - PART 1 - CORE DEFINITIONS (Modular)
+#include "defs/def_constants.qc"
+#include "defs/def_globals.qc"
+#include "defs/def_fields.qc"
+#include "defs/def_builtins.qc"
+#include "defs/def_forwards.qc"
 
 // ##FQX - PART 2 - BASE GAME SYSTEMS
 base/bgs_ai.qc
@@ -62,6 +67,8 @@ bots/bot.qc
 // ##FQX - PART 5 - WORLDSPAWN
 base/bgs_world.qc
 
-//=============================================================================
-// progs.src - FQX Mod - Main Compilation File - END
-//=============================================================================
+// ======================================================================= //
+// Project: FQX Phoenix v0.5
+// File: /progs.src - File Version: 3.0.1
+// Last Coder: ##FIREFQX
+// =======================================================================

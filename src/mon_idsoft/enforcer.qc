@@ -1,10 +1,13 @@
 // =======================================================================
 //
 // ##File: mon_idsoft/enforcer.qc
+// ##Project Version: FQX Phoenix v0.5.0
 // ##File Description: AI logic for the Enforcer entity.
-// ##FQX - ##FQXnote.: Version 2.0.0 (20250610.034450)
+// ##File Version: 2.0.1 (20250614.221814CDT)
 //
-// ##FQXnote.
+// v2.0.1 - Corrected model reference for Enforcer head from 'progs/h_enfor.mdl'
+//          to 'progs/h_mega.mdl' to resolve "Mod_NumForName: ... not found"
+//          error upon map transition, ensuring vanilla asset compatibility. ##FIREFQX:
 // v2.0.0 - Complete re-analysis from a clean slate to ensure absolute accuracy.
 //        - Corrected function name collision while preserving original QuakeC
 //          assignment syntax to guarantee parser compatibility.
@@ -25,7 +28,6 @@ void() enforcer_die;
 void(entity attacker, float damage) enforcer_pain;
 void() enf_die1;
 
-
 $cd /raid/quake/id1/models
 $origin 0 0 24
 $base base
@@ -41,9 +43,9 @@ $frame enf_die1 enf_die2 enf_die3 enf_die4 enf_die5 enf_die6 enf_die7 enf_die8 e
 $frame enf_a1 enf_a2 enf_a3 enf_a4 enf_a5 enf_a6 enf_a7 enf_a8 enf_a9 enf_a10 enf_a11 enf_a12 enf_a13 enf_a14 enf_a15
 
 
-//================================================================
-// Stand
-//================================================================
+// ==================================================================
+// Stand - Enforcer Stand Animations
+// ==================================================================
 void() enf_stand1 = [$enf_stn1, enf_stand2] {ai_stand();};
 void() enf_stand2 = [$enf_stn2, enf_stand3] {ai_stand();};
 void() enf_stand3 = [$enf_stn3, enf_stand4] {ai_stand();};
@@ -51,9 +53,9 @@ void() enf_stand4 = [$enf_stn4, enf_stand5] {ai_stand();};
 void() enf_stand5 = [$enf_stn5, enf_stand1] {ai_stand();};
 
 
-//================================================================
-// Walk
-//================================================================
+// ==================================================================
+// Walk - Enforcer Walk Animations
+// ==================================================================
 void() enf_walk1  = [$enf_run1,  enf_walk2]  {ai_walk(5);};
 void() enf_walk2  = [$enf_run2,  enf_walk3]  {ai_walk(5);};
 void() enf_walk3  = [$enf_run3,  enf_walk4]  {ai_walk(5);};
@@ -67,10 +69,9 @@ void() enf_walk10 = [$enf_run10, enf_walk11] {ai_walk(5);};
 void() enf_walk11 = [$enf_run11, enf_walk12] {ai_walk(5);};
 void() enf_walk12 = [$enf_run12, enf_walk1]  {ai_walk(5);};
 
-
-//================================================================
-// Run
-//================================================================
+// ==================================================================
+// Run - Enforcer Run Animations
+// ==================================================================
 void() enf_run1  = [$enf_run1,  enf_run2]  {ai_run(12);};
 void() enf_run2  = [$enf_run2,  enf_run3]  {ai_run(12);};
 void() enf_run3  = [$enf_run3,  enf_run4]  {ai_run(12);};
@@ -85,9 +86,9 @@ void() enf_run11 = [$enf_run11, enf_run12] {ai_run(12);};
 void() enf_run12 = [$enf_run12, enf_run1]  {ai_run(12);};
 
 
-//================================================================
-// Attack
-//================================================================
+// ==================================================================
+// Attack - Enforcer Attack Logic
+// ==================================================================
 
 // ##FQXnote.: EXTERNAL DEPENDENCY: Functions 'spawn_shot_spark' and 'LaunchLaser'
 // ##FQXnote.: must have forward declarations in the global 'defs/' files to resolve
@@ -106,7 +107,6 @@ void enforcer_fire(float side)
 
 	if(trace_ent.classname=="player")
 		spawn_shot_spark(trace_endpos);
-
 	LaunchLaser (self.origin + self.view_ofs + v_forward*20 + side*v_right, dir);
 }
 
@@ -127,9 +127,9 @@ void() enf_atk14 = [$enf_a14, enf_atk15] { self.weaponframe = 0; SUB_CheckRefire
 void() enf_atk15 = [$enf_a15, enf_run1]  {};
 
 
-//================================================================
-// Pain
-//================================================================
+// ==================================================================
+// Pain - Enforcer Pain Animations
+// ==================================================================
 
 // ##FQXnote.: CORRECTED: Renamed from 'enf_pain' to 'enforcer_pain_action' to resolve
 // ##FQXnote.: a critical name collision with the main pain handler. This definition
@@ -139,7 +139,6 @@ void() enforcer_pain_action =
 	self.weaponframe = 0;
 	ai_pain(3);
 };
-
 void() enf_pain1  = [$enf_pain1,  enf_pain2]  {};
 void() enf_pain2  = [$enf_pain2,  enf_pain3]  {};
 // ##FQXnote.: CORRECTED: Call updated to the new, non-conflicting function name.
@@ -156,7 +155,6 @@ void() enf_painc3 = [$enf_painc3, enf_painc4] {};
 void() enf_painc4 = [$enf_painc4, enf_painc5] {};
 // ##FQXnote.: CORRECTED: Call updated to the new, non-conflicting function name.
 void() enf_painc5 = [$enf_painc5, enf_run1]   {enforcer_pain_action();};
-
 
 // ##FQXnote.: EXTERNAL DEPENDENCY: The 'too many parameters' warning for 'ai_painforward'
 // ##FQXnote.: confirms its forward declaration in 'defs/defs_fqx_fdec_monsters.qc'
@@ -183,7 +181,6 @@ void(entity attacker, float damage) enforcer_pain =
 		return;
 
 	r = random();
-
 	if (r < 0.25)
 	{
 		sound (self, CHAN_VOICE, "enforcer/enf_pain1.wav", 1, ATTN_NORM);
@@ -210,10 +207,9 @@ void(entity attacker, float damage) enforcer_pain =
 	}
 };
 
-
-//================================================================
-// Death
-//================================================================
+// ==================================================================
+// Death - Enforcer Death Logic
+// ==================================================================
 void() enforcer_die =
 {
 // check for gib
@@ -223,7 +219,7 @@ void() enforcer_die =
 		ThrowGib ("progs/gib1.mdl", -30);
 		ThrowGib ("progs/gib2.mdl", -30);
 		ThrowGib ("progs/gib3.mdl", -30);
-		ThrowHead ("progs/h_enfor.mdl", -30);
+		ThrowHead ("progs/h_mega.mdl", -30); // Corrected model reference
 		self.deadflag = DEAD_DEAD;
 		return;
 	}
@@ -250,9 +246,9 @@ void() enf_die11 = [$enf_die11, enf_die12] {ai_forward(1);};
 void() enf_die12 = [$enf_die12, enf_die12] {self.solid=SOLID_NOT;};
 
 
-//================================================================
-// Spawn
-//================================================================
+// ==================================================================
+// Spawn - Enforcer Spawn Function
+// ==================================================================
 
 /*QUAKED monster_enforcer (1 0 0) (-16 -16 -24) (16 16 24)
 */
@@ -264,7 +260,7 @@ void() monster_enforcer =
 		return;
 	}
 	precache_model ("progs/enforcer.mdl");
-	precache_model ("progs/h_enfor.mdl");
+	precache_model ("progs/h_mega.mdl"); // Corrected model reference
 	precache_sound ("enforcer/enf_pain1.wav");
 	precache_sound ("enforcer/enf_pain2.wav");
 	precache_sound ("enforcer/enf_deth.wav");
@@ -289,3 +285,10 @@ void() monster_enforcer =
 
 	walkmonster_start();
 };
+
+// =======================================================================
+//
+// Project: FQX Phoenix v0.5.0
+// File: mon_idsoft/enforcer.qc - File Version: 2.0.1
+// Last Coder: ##FIREFQX:
+// =======================================================================
