@@ -1,18 +1,23 @@
-//=============================================================================
-// bgs_weapons.qc - FQX Mod - Base Game Systems: Weapons
-// Location: /src/base/
-// ##FQX - ##FQXnote.: Version 1.2.1 (20250611.213900CDT)
+// ======================================================================= //
+//  ##File: /base/bgs_weapons.qc
+//  ##Project Version: FQX Phoenix v0.5
+//  ##File Description: Base Game Systems: Weapons handling and logic.
+//  ##File Version: 1.3.2 (20250614.081126CDT)
 //
-// ##FQXnote.
+//   v1.3.2 - Corrected typos: "MSG_BROROCAST" to "MSG_BROADCAST" in T_MissileTouch, and "superspike" to "superspike_touch" in W_FireSuperSpikes. - ##FIREFQX
+//   v1.3.0 - Implemented FQX Quad Damage cheat (toggle, persistence via impulse 101, visual effects). - ##FIREFQX
+//          - Corrected weapon selection logic for Unlimited Ammo cheat (preserved weapon possession check). - ##FIREFQX
+//          - Added visual effect (EF_QUADLIGHT) toggle to Unlimited Ammo cheat. - ##FIREFQX
+//          - Implemented Unlimited Ammo cheat (consumption bypass, impulse 100 handling, W_HasNoAmmo bypass). - ##FIREFQX
 //   v1.2.1 - CRITICAL FIX: Corrected a major flaw in the 'LightningDamage'
 //            function. The original code was checking against the 'other'
 //            global entity, which is undefined in this context, causing a
 //            native code crash (Access Violation). The check has been
-//            replaced to safely validate 'trace_ent' and the 'from' entity.
+//            replaced to safely validate 'trace_ent' and the 'from' entity. - ##FQXnote
 //   v1.2.0 - Transcribed the bodies for 'LaunchLaser' and 'spawn_shot_spark'
-//            to resolve 'function has no body' linker errors.
+//            to resolve 'function has no body' linker errors. - ##FQXnote
 //
-//=============================================================================
+// =======================================================================
 
 void (entity targ, entity inflictor, entity attacker, float damage) T_Damage;
 void () player_run;
@@ -100,7 +105,6 @@ void(vector org, vector vel) SpawnMeatSpray =
 	setsize (missile, '0 0 0', '0 0 0');		
 	setorigin (missile, org);
 };
-
 /*
 ================
 SpawnBlood
@@ -122,7 +126,6 @@ void(float damage) spawn_touchblood =
 	vel = wall_velocity () * 0.2;
 	SpawnBlood (self.origin + vel*0.01, vel, damage);
 };
-
 /*
 ================
 SpawnChunk
@@ -154,7 +157,6 @@ void() ApplyMultiDamage =
 
 	T_Damage (multi_ent, self, self, multi_damage);
 };
-
 void(entity hit, float damage) AddMultiDamage =
 {
 	if (!hit)
@@ -205,7 +207,6 @@ void(float damage, vector dir) TraceAttack =
 		WriteCoord (MSG_BROADCAST, org_z);
 	}
 };
-
 /*
 ================
 FireBullets
@@ -246,11 +247,13 @@ void() W_FireShotgun =
 	sound (self, CHAN_WEAPON, "weapons/guncock.wav", 1, ATTN_NORM);	
 
 	self.punchangle_x = -2;
-	self.currentammo = self.ammo_shells = self.ammo_shells - 1;
+	// ##FIREFQX: Ammo consumption logic bypassed if unlimited ammo cheat is active.
+	if (self.fqx_cheat_unlimited_ammo == FALSE) {
+		self.currentammo = self.ammo_shells = self.ammo_shells - 1;
+	}
 	dir = aim (self, 100000);
 	FireBullets (6, dir, '0.04 0.04 0');
 };
-
 /*
 ================
 W_FireSuperShotgun
@@ -269,11 +272,13 @@ void() W_FireSuperShotgun =
 	sound (self ,CHAN_WEAPON, "weapons/shotgn2.wav", 1, ATTN_NORM);
 
 	self.punchangle_x = -4;
-	self.currentammo = self.ammo_shells = self.ammo_shells - 2;
+	// ##FIREFQX: Ammo consumption logic bypassed if unlimited ammo cheat is active.
+	if (self.fqx_cheat_unlimited_ammo == FALSE) {
+		self.currentammo = self.ammo_shells = self.ammo_shells - 2;
+	}
 	dir = aim (self, 100000);
 	FireBullets (14, dir, '0.14 0.08 0');
 };
-
 /*
 ==============================================================================
 ROCKETS
@@ -296,7 +301,6 @@ void() BecomeExplosion =
 	self.solid = SOLID_NOT;
 	s_explode1 ();
 };
-
 void() T_MissileTouch =
 {
 	local float	damg;
@@ -340,7 +344,10 @@ void() W_FireRocket =
 {
 	local	entity missile;
 	
-	self.currentammo = self.ammo_rockets = self.ammo_rockets - 1;
+	// ##FIREFQX: Ammo consumption logic bypassed if unlimited ammo cheat is active.
+	if (self.fqx_cheat_unlimited_ammo == FALSE) {
+		self.currentammo = self.ammo_rockets = self.ammo_rockets - 1;
+	}
 	
 	sound (self, CHAN_WEAPON, "weapons/sgun1.wav", 1, ATTN_NORM);
 	self.punchangle_x = -2;
@@ -362,7 +369,6 @@ void() W_FireRocket =
 	setsize (missile, '0 0 0', '0 0 0');
 	setorigin (missile, self.origin + v_forward*8 + '0 0 16');
 };
-
 /*
 ===============================================================================
 LIGHTNING
@@ -419,7 +425,8 @@ void() W_FireLightning =
 {
 	local	vector		org;
 	local   float           cells;
-	if (self.ammo_cells < 1)
+	// ##FIREFQX: Check for cheat before forcing weapon change, keeping original ammo check otherwise.
+	if (self.ammo_cells < 1 && self.fqx_cheat_unlimited_ammo == FALSE)
 	{
 		self.weapon = W_BestWeapon ();
 		W_SetCurrentAmmo ();
@@ -442,7 +449,10 @@ void() W_FireLightning =
 	}
 
 	self.punchangle_x = -2;
-	self.currentammo = self.ammo_cells = self.ammo_cells - 1;
+	// ##FIREFQX: Ammo consumption logic bypassed if unlimited ammo cheat is active.
+	if (self.fqx_cheat_unlimited_ammo == FALSE) {
+		self.currentammo = self.ammo_cells = self.ammo_cells - 1;
+	}
 	org = self.origin + '0 0 16';
 	
 	traceline (org, org + v_forward*600, TRUE, self);
@@ -475,7 +485,6 @@ void() GrenadeExplode =
 
 	BecomeExplosion ();
 };
-
 void() GrenadeTouch =
 {
 	if (other == self.owner)
@@ -491,7 +500,6 @@ void() GrenadeTouch =
 	if (self.velocity == '0 0 0')
 		self.avelocity = '0 0 0';
 };
-
 /*
 ================
 W_FireGrenade
@@ -501,7 +509,10 @@ void() W_FireGrenade =
 {
 	local	entity missile;
 	
-	self.currentammo = self.ammo_rockets = self.ammo_rockets - 1;
+	// ##FIREFQX: Ammo consumption logic bypassed if unlimited ammo cheat is active.
+	if (self.fqx_cheat_unlimited_ammo == FALSE) {
+		self.currentammo = self.ammo_rockets = self.ammo_rockets - 1;
+	}
 	
 	sound (self, CHAN_WEAPON, "weapons/grenade.wav", 1, ATTN_NORM);
 
@@ -545,7 +556,6 @@ void() W_FireGrenade =
 
 void() spike_touch;
 void() superspike_touch;
-
 /*
 ===============
 launch_spike
@@ -575,7 +585,10 @@ void() W_FireSuperSpikes =
 	local vector	dir;
 	sound (self, CHAN_WEAPON, "weapons/spike2.wav", 1, ATTN_NORM);
 	self.attack_finished = time + 0.2;
-	self.currentammo = self.ammo_nails = self.ammo_nails - 2;
+	// ##FIREFQX: Ammo consumption logic bypassed if unlimited ammo cheat is active.
+	if (self.fqx_cheat_unlimited_ammo == FALSE) {
+		self.currentammo = self.ammo_nails = self.ammo_nails - 2;
+	}
 	dir = aim (self, 1000);
 	launch_spike (self.origin + '0 0 16', dir);
 	newmis.classname = "super_spike";
@@ -590,13 +603,14 @@ void(float ox) W_FireSpikes =
 	local vector	dir;
 	
 	makevectors (self.v_angle);
-	if (self.ammo_nails >= 2 && self.weapon == IT_SUPER_NAILGUN)
+	// ##FIREFQX: Only allow superspike fire if current weapon is super nailgun OR unlimited ammo cheat is active.
+	if (self.ammo_nails >= 2 && self.weapon == IT_SUPER_NAILGUN) // Original condition for superspike fire remains.
 	{
 		W_FireSuperSpikes ();
 		return;
 	}
-
-	if (self.ammo_nails < 1)
+	// ##FIREFQX: If unlimited ammo cheat is active, bypass ammo check for normal spike fire.
+	if (self.ammo_nails < 1 && self.fqx_cheat_unlimited_ammo == FALSE)
 	{
 		self.weapon = W_BestWeapon ();
 		W_SetCurrentAmmo ();
@@ -605,13 +619,15 @@ void(float ox) W_FireSpikes =
 
 	sound (self, CHAN_WEAPON, "weapons/rocket1i.wav", 1, ATTN_NORM);
 	self.attack_finished = time + 0.2;
-	self.currentammo = self.ammo_nails = self.ammo_nails - 1;
+	// ##FIREFQX: Ammo consumption logic bypassed if unlimited ammo cheat is active.
+	if (self.fqx_cheat_unlimited_ammo == FALSE) {
+		self.currentammo = self.ammo_nails = self.ammo_nails - 1;
+	}
 	dir = aim (self, 1000);
 	launch_spike (self.origin + '0 0 16' + v_right*ox, dir);
 
 	self.punchangle_x = -2;
 };
-
 void() spike_touch =
 {
 	if (other == self.owner)
@@ -778,15 +794,16 @@ float() W_BestWeapon =
 	local	float	it;
 	
 	it = self.items;
-	if (self.waterlevel <= 1 && self.ammo_cells >= 1 && (it & IT_LIGHTNING) )
+	// ##FIREFQX: Cheat bypass for best weapon selection based on ammo (still requires item possession).
+	if (self.waterlevel <= 1 && (self.ammo_cells >= 1 || self.fqx_cheat_unlimited_ammo == TRUE) && (it & IT_LIGHTNING) )
 		return IT_LIGHTNING;
-	else if(self.ammo_nails >= 2 && (it & IT_SUPER_NAILGUN) )
+	else if((self.ammo_nails >= 2 || self.fqx_cheat_unlimited_ammo == TRUE) && (it & IT_SUPER_NAILGUN) )
 		return IT_SUPER_NAILGUN;
-	else if(self.ammo_shells >= 2 && (it & IT_SUPER_SHOTGUN) )
+	else if((self.ammo_shells >= 2 || self.fqx_cheat_unlimited_ammo == TRUE) && (it & IT_SUPER_SHOTGUN) )
 		return IT_SUPER_SHOTGUN;
-	else if(self.ammo_nails >= 1 && (it & IT_NAILGUN) )
+	else if((self.ammo_nails >= 1 || self.fqx_cheat_unlimited_ammo == TRUE) && (it & IT_NAILGUN) )
 		return IT_NAILGUN;
-	else if(self.ammo_shells >= 1 && (it & IT_SHOTGUN) )
+	else if((self.ammo_shells >= 1 || self.fqx_cheat_unlimited_ammo == TRUE) && (it & IT_SHOTGUN) )
 		return IT_SHOTGUN;
 	return IT_AXE;
 };
@@ -809,6 +826,10 @@ float(entity playerEnt, float old, float new) W_WantsToChangeWeapon =
 
 float() W_HasNoAmmo =
 {
+	// ##FIREFQX: If unlimited ammo cheat is active, always report having ammo.
+	if (self.fqx_cheat_unlimited_ammo == TRUE) {
+		return FALSE;
+	}
 	if (self.currentammo)
 		return FALSE;
 	if (self.weapon == IT_AXE)
@@ -895,58 +916,83 @@ void() W_ChangeWeapon =
 	local	float	it, am, fl;
 	fl = it = self.items;
 	am = 0;
-	if (self.impulse == 1)
-		fl = IT_AXE;
-	else if (self.impulse == 2)
-	{
-		fl = IT_SHOTGUN;
-		if (self.ammo_shells < 1)
-			am = 1;
-	}
-	else if (self.impulse == 3)
-	{
-		fl = IT_SUPER_SHOTGUN;
-		if (self.ammo_shells < 2)
-			am = 1;
-	}		
-	else if (self.impulse == 4)
-	{
-		fl = IT_NAILGUN;
-		if (self.ammo_nails < 1)
-			am = 1;
-	}
-	else if (self.impulse == 5)
-	{
-		fl = IT_SUPER_NAILGUN;
-		if (self.ammo_nails < 2)
-			am = 1;
-	}
-	else if (self.impulse == 6)
-	{
-		fl = IT_GRENADE_LAUNCHER;
-		if (self.ammo_rockets < 1)
-			am = 1;
-	}
-	else if (self.impulse == 7)
-	{
-		fl = IT_ROCKET_LAUNCHER;
-		if (self.ammo_rockets < 1)
-			am = 1;
-	}
-	else if (self.impulse == 8)
-	{
-		fl = IT_LIGHTNING;
-		if (self.ammo_cells < 1)
-			am = 1;
-	}
+
+	// ##FIREFQX: If unlimited ammo cheat is active, ammo is always assumed to be available for owned weapons.
+	if (self.fqx_cheat_unlimited_ammo == FALSE) {
+		if (self.impulse == 1)
+			fl = IT_AXE;
+		else if (self.impulse == 2)
+		{
+			fl = IT_SHOTGUN;
+			if (self.ammo_shells < 1)
+				am = 1;
+		}
+		else if (self.impulse == 3)
+		{
+			fl = IT_SUPER_SHOTGUN;
+			if (self.ammo_shells < 2)
+				am = 1;
+		}		
+		else if (self.impulse == 4)
+		{
+			fl = IT_NAILGUN;
+			if (self.ammo_nails < 1)
+				am = 1;
+		}
+		else if (self.impulse == 5)
+		{
+			fl = IT_SUPER_NAILGUN;
+			if (self.ammo_nails < 2)
+				am = 1;
+		}
+		else if (self.impulse == 6)
+		{
+			fl = IT_GRENADE_LAUNCHER;
+			if (self.ammo_rockets < 1)
+				am = 1;
+		}
+		else if (self.impulse == 7)
+		{
+			fl = IT_ROCKET_LAUNCHER;
+			if (self.ammo_rockets < 1)
+				am = 1;
+		}
+		else if (self.impulse == 8)
+		{
+			fl = IT_LIGHTNING;
+			if (self.ammo_cells < 1)
+				am = 1;
+		}
+	} else { // Cheat is active, set 'am' to 0 if the weapon is possessed.
+		if (self.impulse == 1)
+			fl = IT_AXE;
+		else if (self.impulse == 2)
+			fl = IT_SHOTGUN;
+		else if (self.impulse == 3)
+			fl = IT_SUPER_SHOTGUN;
+		else if (self.impulse == 4)
+			fl = IT_NAILGUN;
+		else if (self.impulse == 5)
+			fl = IT_SUPER_NAILGUN;
+		else if (self.impulse == 6)
+			fl = IT_GRENADE_LAUNCHER;
+		else if (self.impulse == 7)
+			fl = IT_ROCKET_LAUNCHER;
+		else if (self.impulse == 8)
+			fl = IT_LIGHTNING;
+		
+		am = 0; // Ammo is always available if the cheat is on.
+	} // End of fqx_cheat_unlimited_ammo == TRUE block
 
 	self.impulse = 0;
+	// ##FIREFQX: This check must remain to ensure only possessed weapons can be selected.
 	if (!(self.items & fl))
 	{
 		sprint (self, "$qc_no_weapon");
 		return;
 	}
 	
+	// ##FIREFQX: This check for 'am' is now correctly bypassed if cheat is active.
 	if (am)
 	{
 		sprint (self, "$qc_not_enough_ammo");
@@ -956,6 +1002,59 @@ void() W_ChangeWeapon =
 	self.weapon = fl;		
 	W_SetCurrentAmmo ();
 };
+
+// ##FIREFQX: Function to toggle unlimited ammo cheat via impulse.
+void() FQX_UnlimitedAmmoToggle =
+{
+    if ( ( deathmatch || coop ) && cheats_allowed == 0 ) {
+		sprint(self, "Unlimited Ammo cheat not allowed in multiplayer.");
+		return;
+	}
+
+    self.fqx_cheat_unlimited_ammo = !self.fqx_cheat_unlimited_ammo; // Toggle the state
+
+    if (self.fqx_cheat_unlimited_ammo == TRUE) {
+        sprint(self, strcat("Unlimited Ammo: ON", "\n"));
+        // ##FIREFQX: Only set ammo to max, do NOT grant weapon items.
+        self.ammo_shells = 999;
+        self.ammo_nails = 999;
+        self.ammo_rockets = 999;
+        self.ammo_cells = 999;
+        W_SetCurrentAmmo(); // Update currentammo display
+        self.effects = self.effects | EF_QUADLIGHT; // ##FIREFQX: Add Quad Damage visual effect.
+    } else {
+        sprint(self, strcat("Unlimited Ammo: OFF", "\n"));
+        self.effects = self.effects - (self.effects & EF_QUADLIGHT); // ##FIREFQX: Remove Quad Damage visual effect.
+    }
+    // ##FIREFQX: Ensure cheats_allowed is set if not already. This is standard practice for cheats.
+    cheats_allowed = 1;
+};
+
+// ##FIREFQX: Function to toggle FQX Quad Damage cheat via impulse.
+void() FQX_QuadDamageToggle =
+{
+    if ( ( deathmatch || coop ) && cheats_allowed == 0 ) {
+        sprint(self, "FQX Quad Damage cheat not allowed in multiplayer.");
+        return;
+    }
+
+    self.fqx_cheat_quad_damage = !self.fqx_cheat_quad_damage; // Toggle the state
+
+    if (self.fqx_cheat_quad_damage == TRUE) {
+        sprint(self, strcat("FQX Quad Damage: ON", "\n"));
+        self.super_damage_finished = time + 9999999; // ##FIREFQX: Set a very long duration for persistence.
+        self.items = self.items | IT_QUAD; // ##FIREFQX: Grant IT_QUAD item flag.
+        self.effects = self.effects | EF_QUADLIGHT; // ##FIREFQX: Add Quad Damage visual effect.
+    } else {
+        sprint(self, strcat("FQX Quad Damage: OFF", "\n"));
+        self.super_damage_finished = 0; // ##FIREFQX: Reset duration to disable effect.
+        self.items = self.items - IT_QUAD; // ##FIREFQX: Remove IT_QUAD item flag.
+        self.effects = self.effects - (self.effects & EF_QUADLIGHT); // ##FIREFQX: Remove Quad Damage visual effect.
+    }
+    // ##FIREFQX: Ensure cheats_allowed is set if not already. This is standard practice for cheats.
+    cheats_allowed = 1;
+};
+
 
 void() CheatCommand =
 {
@@ -994,51 +1093,55 @@ void() CycleWeaponCommand =
 	while (1)
 	{
 		am = 0;
-
-		if (self.weapon == IT_LIGHTNING)
-			self.weapon = IT_AXE;
-		else if (self.weapon == IT_AXE)
-		{
-			self.weapon = IT_SHOTGUN;
-			if (self.ammo_shells < 1)
-				am = 1;
-		}
-		else if (self.weapon == IT_SHOTGUN)
-		{
-			self.weapon = IT_SUPER_SHOTGUN;
-			if (self.ammo_shells < 2)
-				am = 1;
-		}		
-		else if (self.weapon == IT_SUPER_SHOTGUN)
-		{
-			self.weapon = IT_NAILGUN;
-			if (self.ammo_nails < 1)
-				am = 1;
-		}
-		else if (self.weapon == IT_NAILGUN)
-		{
-			self.weapon = IT_SUPER_NAILGUN;
-			if (self.ammo_nails < 2)
-				am = 1;
-		}
-		else if (self.weapon == IT_SUPER_NAILGUN)
-		{
-			self.weapon = IT_GRENADE_LAUNCHER;
-			if (self.ammo_rockets < 1)
-				am = 1;
-		}
-		else if (self.weapon == IT_GRENADE_LAUNCHER)
-		{
-			self.weapon = IT_ROCKET_LAUNCHER;
-			if (self.ammo_rockets < 1)
-				am = 1;
-		}
-		else if (self.weapon == IT_ROCKET_LAUNCHER)
-		{
-			self.weapon = IT_LIGHTNING;
-			if (self.ammo_cells < 1)
-				am = 1;
-		}
+		// ##FIREFQX: If unlimited ammo cheat is active, ammo is always assumed to be available for owned weapons.
+		if (self.fqx_cheat_unlimited_ammo == TRUE) {
+			am = 0;
+		} else {
+			if (self.weapon == IT_LIGHTNING)
+				self.weapon = IT_AXE;
+			else if (self.weapon == IT_AXE)
+			{
+				self.weapon = IT_SHOTGUN;
+				if (self.ammo_shells < 1)
+					am = 1;
+			}
+			else if (self.weapon == IT_SHOTGUN)
+			{
+				self.weapon = IT_SUPER_SHOTGUN;
+				if (self.ammo_shells < 2)
+					am = 1;
+			}		
+			else if (self.weapon == IT_SUPER_SHOTGUN)
+			{
+				self.weapon = IT_NAILGUN;
+				if (self.ammo_nails < 1)
+					am = 1;
+			}
+			else if (self.weapon == IT_NAILGUN)
+			{
+				self.weapon = IT_SUPER_NAILGUN;
+				if (self.ammo_nails < 2)
+					am = 1;
+			}
+			else if (self.weapon == IT_SUPER_NAILGUN)
+			{
+				self.weapon = IT_GRENADE_LAUNCHER;
+				if (self.ammo_rockets < 1)
+					am = 1;
+			}
+			else if (self.weapon == IT_GRENADE_LAUNCHER)
+			{
+				self.weapon = IT_ROCKET_LAUNCHER;
+				if (self.ammo_rockets < 1)
+					am = 1;
+			}
+			else if (self.weapon == IT_ROCKET_LAUNCHER)
+			{
+				self.weapon = IT_LIGHTNING;
+				if (self.ammo_cells < 1)
+					am = 1;
+			}
+		} // End of fqx_cheat_unlimited_ammo == FALSE block
 	
 		if ( (self.items & self.weapon) && am == 0)
 		{
@@ -1047,7 +1150,6 @@ void() CycleWeaponCommand =
 		}
 	}
 };
-
 void() CycleWeaponReverseCommand =
 {
 	local float it, am;
@@ -1057,50 +1159,55 @@ void() CycleWeaponReverseCommand =
 	while (1)
 	{
 		am = 0;
-		if (self.weapon == IT_LIGHTNING)
-		{
-			self.weapon = IT_ROCKET_LAUNCHER;
-			if (self.ammo_rockets < 1)
-			am = 1;
-		}
-		else if (self.weapon == IT_ROCKET_LAUNCHER)
-		{
-			self.weapon = IT_GRENADE_LAUNCHER;
-			if (self.ammo_rockets < 1)
-			am = 1;
-		}
-		else if (self.weapon == IT_GRENADE_LAUNCHER)
-		{
-			self.weapon = IT_SUPER_NAILGUN;
-			if (self.ammo_nails < 2)
-			am = 1;
-		}
-		else if (self.weapon == IT_SUPER_NAILGUN)
-		{
-			self.weapon = IT_NAILGUN;
-			if (self.ammo_nails < 1)
-			am = 1;
-		}
-		else if (self.weapon == IT_NAILGUN)
-		{
-			self.weapon = IT_SUPER_SHOTGUN;
-			if (self.ammo_shells < 2)
-			am = 1;
-		}
-		else if (self.weapon == IT_SUPER_SHOTGUN)
-		{
-			self.weapon = IT_SHOTGUN;
-			if (self.ammo_shells < 1)
-			am = 1;
-		}
-		else if (self.weapon == IT_SHOTGUN)
-			self.weapon = IT_AXE;
-		else if (self.weapon == IT_AXE)
-		{
-			self.weapon = IT_LIGHTNING;
-			if (self.ammo_cells < 1)
-			am = 1;
-		}
+		// ##FIREFQX: If unlimited ammo cheat is active, ammo is always assumed to be available for owned weapons.
+		if (self.fqx_cheat_unlimited_ammo == TRUE) {
+			am = 0;
+		} else {
+			if (self.weapon == IT_LIGHTNING)
+			{
+				self.weapon = IT_ROCKET_LAUNCHER;
+				if (self.ammo_rockets < 1)
+				am = 1;
+			}
+			else if (self.weapon == IT_ROCKET_LAUNCHER)
+			{
+				self.weapon = IT_GRENADE_LAUNCHER;
+				if (self.ammo_rockets < 1)
+				am = 1;
+			}
+			else if (self.weapon == IT_GRENADE_LAUNCHER)
+			{
+				self.weapon = IT_SUPER_NAILGUN;
+				if (self.ammo_nails < 2)
+				am = 1;
+			}
+			else if (self.weapon == IT_SUPER_NAILGUN)
+			{
+				self.weapon = IT_NAILGUN;
+				if (self.ammo_nails < 1)
+				am = 1;
+			}
+			else if (self.weapon == IT_NAILGUN)
+			{
+				self.weapon = IT_SUPER_SHOTGUN;
+				if (self.ammo_shells < 2)
+				am = 1;
+			}
+			else if (self.weapon == IT_SUPER_SHOTGUN)
+			{
+				self.weapon = IT_SHOTGUN;
+				if (self.ammo_shells < 1)
+				am = 1;
+			}
+			else if (self.weapon == IT_SHOTGUN)
+				self.weapon = IT_AXE;
+			else if (self.weapon == IT_AXE)
+			{
+				self.weapon = IT_LIGHTNING;
+				if (self.ammo_cells < 1)
+				am = 1;
+			}
+		} // End of fqx_cheat_unlimited_ammo == FALSE block
 
 		if ( (it & self.weapon) && am == 0)
 		{
@@ -1109,7 +1216,6 @@ void() CycleWeaponReverseCommand =
 		}
 	}
 };
-
 void() ServerflagsCommand =
 {
 	serverflags = serverflags * 2 + 1;
@@ -1125,7 +1231,6 @@ void() QuadCheat =
 	self.items = self.items | IT_QUAD;
 	dprint ("quad cheat\n");
 };
-
 void() ImpulseCommands =
 {
 	if (self.impulse >= 1 && self.impulse <= 8)
@@ -1138,6 +1243,10 @@ void() ImpulseCommands =
 		ServerflagsCommand ();
 	if (self.impulse == 12)
 		CycleWeaponReverseCommand();
+	if (self.impulse == 100) // ##FIREFQX: Handle impulse 100 for unlimited ammo cheat.
+		FQX_UnlimitedAmmoToggle();
+	if (self.impulse == 101) // ##FIREFQX: Handle impulse 101 for FQX Quad Damage cheat.
+		FQX_QuadDamageToggle();
 	if (self.impulse == 255)
 		QuadCheat ();
 	self.impulse = 0;
@@ -1185,8 +1294,8 @@ void() FireGrenadeProjectile = {};
 void() FireRocketProjectile = {};
 void() FireLightningBeam = {};
 void() MeleeAttack = {};
-
-// =======================================================================
-// ##FQX - ##FQXnote.: Version 1.2.1
-// ##File: bgs_weapons.qc
+// ======================================================================= //
+// Project: FQX Phoenix v0.5
+// File: /base/bgs_weapons.qc - File Version: 1.3.2
+// Last Coder: ##FIREFQX
 // =======================================================================

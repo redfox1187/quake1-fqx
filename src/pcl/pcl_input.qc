@@ -12,6 +12,7 @@
 //
 // =======================================================================
 // ##FQX - ##Quedra: Version 1.0.0
+// ##FIREFQX: Modified for Phase II Unlimited Ammo Cheat (20250614.065419CDT)
 
 /*
 ===============================================================================
@@ -32,7 +33,8 @@ void() PlayerPreThink =
 	// ##Quedra: Check for intermission state first.
 	if (intermission_running)
 	{
-		IntermissionThink ();	// otherwise a button could be missed
+		IntermissionThink ();
+// otherwise a button could be missed
 		return;
 	}
 
@@ -47,7 +49,6 @@ void() PlayerPreThink =
 	// ##Quedra: Check for deathmatch win conditions.
 	if (deathmatch || coop)
 		CheckRules ();
-
 	// ##Quedra: Handle player's interaction with water/slime/lava.
 	WaterMove ();
 
@@ -73,19 +74,18 @@ void() PlayerPreThink =
 	}
 	else
 		self.flags = self.flags | FL_JUMPRELEASED;
-
 	// ##Quedra: Teleporters can induce a temporary pause.
 	if (time < self.pausetime)
 		self.velocity = '0 0 0';
-		
 	// ##Quedra: If out of ammo, automatically switch to best available weapon.
-	if(time > self.attack_finished && self.currentammo == 0 && self.weapon != IT_AXE)
+	// ##FIREFQX: Bypass automatic weapon switch if unlimited ammo cheat is active.
+	if(time > self.attack_finished && self.currentammo == 0 && self.weapon != IT_AXE && self.fqx_cheat_unlimited_ammo == FALSE)
 	{
 		self.weapon = W_BestWeapon ();
 		W_SetCurrentAmmo ();
 	}
 };
-
 // =======================================================================
 // ##FQX - ##Quedra: Version 1.0.0
+// ##FIREFQX: Version 1.0.1 (20250614.065419CDT)
 // =======================================================================
